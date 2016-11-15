@@ -162,6 +162,7 @@ bool CCDirector::init(void)
     m_uTotalFrames = m_uFrames = 0;
     m_pszFPS = new char[100];
     m_pLastUpdate = new struct cc_timeval();
+    CCTime::gettimeofdayCocos2d(m_pLastUpdate, NULL);
 
     // paused ?
 #if (CC_TARGET_PLATFORM == CC_PLATFORM_WIN32 || CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
@@ -203,6 +204,10 @@ bool CCDirector::init(void)
 	m_fSecondsPerFrame = 0.0f;
     // create autorelease pool
     CCPoolManager::sharedPoolManager()->push();
+
+#if CC_TARGET_PLATFORM == CC_PLATFORM_WIN32
+    m_bTextureDrawInfo = false;
+#endif
 
 #if CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID
     EngineDataManager::init();

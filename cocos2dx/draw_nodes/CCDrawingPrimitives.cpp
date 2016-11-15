@@ -303,6 +303,8 @@ void ccDrawSolidPoly( const CCPoint *poli, unsigned int numberOfPoints, ccColor4
 {
     lazy_init();
 
+	CCDirector::sharedDirector()->flushDraw();
+
     s_pShader->use();
     s_pShader->setUniformsForBuiltins();
     s_pShader->setUniformLocationWith4fv(s_nColorLocation, (GLfloat*) &color.r, 1);
@@ -346,6 +348,8 @@ void ccDrawSolidPoly( const CCPoint *poli, unsigned int numberOfPoints, ccColor4
 void ccDrawCircle( const CCPoint& center, float radius, float angle, unsigned int segments, bool drawLineToCenter, float scaleX, float scaleY)
 {
     lazy_init();
+
+	CCDirector::sharedDirector()->flushDraw();
 
     int additionalSegment = 1;
     if (drawLineToCenter)
