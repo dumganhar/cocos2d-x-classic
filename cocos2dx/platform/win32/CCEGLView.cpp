@@ -163,7 +163,7 @@ static bool glew_dynamic_binding()
 //////////////////////////////////////////////////////////////////////////
 static CCEGLView* s_pMainWindow = NULL;
 static const WCHAR* kWindowClassName = L"Cocos2dxWin32";
-
+CCEGLView* CCEGLView::s_pEglView = NULL;
 static LRESULT CALLBACK _WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     if (s_pMainWindow && s_pMainWindow->getHWnd() == hWnd)
@@ -346,7 +346,7 @@ LRESULT CCEGLView::WindowProc(UINT message, WPARAM wParam, LPARAM lParam)
         if (m_pDelegate && MK_LBUTTON == wParam)
         {
             POINT point = {(short)LOWORD(lParam), (short)HIWORD(lParam)};
-            CCPoint pt(point.x, point.y);
+            CCPoint pt((float)point.x, (float)point.y);
             pt.x /= m_fFrameZoomFactor;
             pt.y /= m_fFrameZoomFactor;
             CCPoint tmp = ccp(pt.x, m_obScreenSize.height - pt.y);
@@ -368,7 +368,7 @@ LRESULT CCEGLView::WindowProc(UINT message, WPARAM wParam, LPARAM lParam)
         if (MK_LBUTTON == wParam && m_bCaptured)
         {
             POINT point = {(short)LOWORD(lParam), (short)HIWORD(lParam)};
-            CCPoint pt(point.x, point.y);
+            CCPoint pt((float)point.x, (float)point.y);
             int id = 0;
             pt.x /= m_fFrameZoomFactor;
             pt.y /= m_fFrameZoomFactor;
@@ -384,7 +384,7 @@ LRESULT CCEGLView::WindowProc(UINT message, WPARAM wParam, LPARAM lParam)
         if (m_bCaptured)
         {
             POINT point = {(short)LOWORD(lParam), (short)HIWORD(lParam)};
-            CCPoint pt(point.x, point.y);
+            CCPoint pt((float)point.x, (float)point.y);
             int id = 0;
             pt.x /= m_fFrameZoomFactor;
             pt.y /= m_fFrameZoomFactor;
@@ -411,8 +411,8 @@ LRESULT CCEGLView::WindowProc(UINT message, WPARAM wParam, LPARAM lParam)
                         input.x = TOUCH_COORD_TO_PIXEL(ti.x);
                         input.y = TOUCH_COORD_TO_PIXEL(ti.y);
                         ScreenToClient(m_hWnd, &input);
-                        CCPoint pt(input.x, input.y);
-                        CCPoint tmp = ccp(pt.x, m_obScreenSize.height - pt.y);
+                        CCPoint pt((float)input.x, (float)input.y);
+                        CCPoint tmp = ccp((float)pt.x, (float)(m_obScreenSize.height - pt.y));
                         if (m_obViewPortRect.equals(CCRectZero) || m_obViewPortRect.containsPoint(tmp))
                         {
                             pt.x /= m_fFrameZoomFactor;
@@ -604,6 +604,10 @@ HWND CCEGLView::getHWnd()
 {
     return m_hWnd;
 }
+void CCEGLView::setHWnd(HWND hWnd)
+{
+	m_hWnd = hWnd;
+}
 
 void CCEGLView::resize(int width, int height)
 {
@@ -651,7 +655,7 @@ void CCEGLView::resize(int width, int height)
 void CCEGLView::setFrameZoomFactor(float fZoomFactor)
 {
     m_fFrameZoomFactor = fZoomFactor;
-    resize(m_obScreenSize.width * fZoomFactor, m_obScreenSize.height * fZoomFactor);
+    resize(int(m_obScreenSize.width * fZoomFactor), int(m_obScreenSize.height * fZoomFactor));
     centerWindow();
     CCDirector::sharedDirector()->setProjection(CCDirector::sharedDirector()->getProjection());
 }
@@ -665,8 +669,27 @@ void CCEGLView::setFrameSize(float width, float height)
 {
     CCEGLViewProtocol::setFrameSize(width, height);
 
-    resize(width, height); // adjust window size for menubar
+    resize((int)width, (int)height); // adjust window size for menubar
     centerWindow();
+}
+
+void CCEGLView::setEditorFrameSize(float width, float height,HWND hWnd)
+{
+	m_hWnd=hWnd;
+
+	bool bRet = false;
+	do 
+	{	
+		resize((int)width, (int)height);
+
+		bRet = initGL();
+		CC_BREAK_IF(!bRet);
+
+		s_pMainWindow = this;
+		bRet = true;
+	} while (0);
+
+	CCEGLViewProtocol::setFrameSize(width, height);
 }
 
 void CCEGLView::centerWindow()
@@ -703,10 +726,18 @@ void CCEGLView::centerWindow()
 
 void CCEGLView::setViewPortInPoints(float x , float y , float w , float h)
 {
-    glViewport((GLint)(x * m_fScaleX * m_fFrameZoomFactor + m_obViewPortRect.origin.x * m_fFrameZoomFactor),
-        (GLint)(y * m_fScaleY  * m_fFrameZoomFactor + m_obViewPortRect.origin.y * m_fFrameZoomFactor),
-        (GLsizei)(w * m_fScaleX * m_fFrameZoomFactor),
-        (GLsizei)(h * m_fScaleY * m_fFrameZoomFactor));
+	CCRect glViewPort((float)(x * m_fScaleX * m_fFrameZoomFactor + m_obViewPortRect.origin.x * m_fFrameZoomFactor),
+		(float)(y * m_fScaleY  * m_fFrameZoomFactor + m_obViewPortRect.origin.y * m_fFrameZoomFactor),
+		(float)(w * m_fScaleX * m_fFrameZoomFactor),
+		(float)(h * m_fScaleY * m_fFrameZoomFactor));
+	m_glViewPort = glViewPort;
+
+	glViewport((GLint)m_glViewPort.origin.x, (GLint)m_glViewPort.origin.y, (GLsizei)m_glViewPort.size.width, (GLsizei)m_glViewPort.size.height);
+
+//     glViewport((GLint)(x * m_fScaleX * m_fFrameZoomFactor + m_obViewPortRect.origin.x * m_fFrameZoomFactor),
+//         (GLint)(y * m_fScaleY  * m_fFrameZoomFactor + m_obViewPortRect.origin.y * m_fFrameZoomFactor),
+//         (GLsizei)(w * m_fScaleX * m_fFrameZoomFactor),
+//         (GLsizei)(h * m_fScaleY * m_fFrameZoomFactor));
 }
 
 void CCEGLView::setScissorInPoints(float x , float y , float w , float h)
@@ -719,7 +750,7 @@ void CCEGLView::setScissorInPoints(float x , float y , float w , float h)
 
 CCEGLView* CCEGLView::sharedOpenGLView()
 {
-    static CCEGLView* s_pEglView = NULL;
+  
     if (s_pEglView == NULL)
     {
         s_pEglView = new CCEGLView();
@@ -732,5 +763,6 @@ CCEGLView* CCEGLView::sharedOpenGLView()
 
     return s_pEglView;
 }
+
 
 NS_CC_END

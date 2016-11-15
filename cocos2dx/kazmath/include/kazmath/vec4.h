@@ -61,7 +61,7 @@ CC_DLL kmVec4* kmVec4TransformArray(kmVec4* pOut, unsigned int outStride,
             const kmVec4* pV, unsigned int vStride, const struct kmMat4* pM, unsigned int count);
 CC_DLL int     kmVec4AreEqual(const kmVec4* p1, const kmVec4* p2);
 CC_DLL kmVec4* kmVec4Assign(kmVec4* pOut, const kmVec4* pIn);
-
+CC_DLL kmVec4* kmVec4MultiplyMat4(kmVec4* pOut, const kmVec4* pV, const struct kmMat4* pM);
 #ifdef __cplusplus
 }
 #endif

@@ -63,8 +63,8 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(MSBuildProgramFiles32)\Microsoft SDKs\Windows\v7.1A\include;$(ProjectDir)..\..\external\chipmunk\include\chipmunk;$(ProjectDir)..\..\external\sqlite3\include;$(ProjectDir)..\..\external;$(ProjectDir)..\..\external\libwebsockets\win32\include;$(ProjectDir)..\..\cocos2dx;$(ProjectDir)..\..\cocos2dx\include;$(ProjectDir)..\..\cocos2dx\kazmath\include;$(ProjectDir)..\..\cocos2dx\platform\win32;$(ProjectDir)..\..\cocos2dx\platform\third_party\win32;$(ProjectDir)..\..\cocos2dx\platform\third_party\win32\pthread;$(ProjectDir)..\..\cocos2dx\platform\third_party\win32\OGLES;$(ProjectDir)..\..\cocos2dx\platform\third_party\win32\zlib;$(ProjectDir)..\..\CocosDenshion\include;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;_LIB;COCOS2D_DEBUG=1;CC_ENABLE_CHIPMUNK_INTEGRATION=1;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(MSBuildProgramFiles32)\Microsoft SDKs\Windows\v7.1A\include;$(ProjectDir)..\..\external\sqlite3\include;$(ProjectDir)..\..\external\boost_1_54_0;$(ProjectDir)..\..\external;$(ProjectDir)..\..\external\chipmunk\include\chipmunk;$(ProjectDir)..\..\external\libwebsockets\win32\include;$(ProjectDir)..\..\cocos2dx;$(ProjectDir)..\..\cocos2dx\include;$(ProjectDir)..\..\cocos2dx\kazmath\include;$(ProjectDir)..\..\cocos2dx\platform\win32;$(ProjectDir)..\..\cocos2dx\platform\third_party\win32;$(ProjectDir)..\..\cocos2dx\platform\third_party\win32\pthread;$(ProjectDir)..\..\cocos2dx\platform\third_party\win32\OGLES;$(ProjectDir)..\..\cocos2dx\platform\third_party\win32\zlib;$(ProjectDir)..\..\CocosDenshion\include;$(ProjectDir)..\..\extensions\CocoGUILIB\BaseClasses;$(ProjectDir)..\..\extensions\CocoGUILIB\Drawable;$(ProjectDir)..\..\extensions\CocoGUILIB\UIWidgets;$(ProjectDir)..\..\extensions\CocoGUILIB\Action;$(ProjectDir)..\..\extensions\CocoGUILIB\System;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;_LIB;COCOS2D_DEBUG=1;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -72,15 +72,15 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
-      <DisableSpecificWarnings>4267;4251;4244;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4267;4251;4244;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(MSBuildProgramFiles32)\Microsoft SDKs\Windows\v7.1A\include;$(ProjectDir)..\..\external\chipmunk\include\chipmunk;$(ProjectDir)..\..\external\sqlite3\include;$(ProjectDir)..\..\external;$(ProjectDir)..\..\external\libwebsockets\win32\include;$(ProjectDir)..\..\cocos2dx;$(ProjectDir)..\..\cocos2dx\include;$(ProjectDir)..\..\cocos2dx\kazmath\include;$(ProjectDir)..\..\cocos2dx\platform\win32;$(ProjectDir)..\..\cocos2dx\platform\third_party\win32;$(ProjectDir)..\..\cocos2dx\platform\third_party\win32\pthread;$(ProjectDir)..\..\cocos2dx\platform\third_party\win32\OGLES;$(ProjectDir)..\..\cocos2dx\platform\third_party\win32\zlib;$(ProjectDir)..\..\CocosDenshion\include;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_LIB;CC_ENABLE_CHIPMUNK_INTEGRATION=1;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(MSBuildProgramFiles32)\Microsoft SDKs\Windows\v7.1A\include;$(ProjectDir)..\..\external\chipmunk\include\chipmunk;$(ProjectDir)..\..\external\sqlite3\include;$(ProjectDir)..\..\external;$(ProjectDir)..\..\external\libwebsockets\win32\include;$(ProjectDir)..\..\cocos2dx;$(ProjectDir)..\..\cocos2dx\include;$(ProjectDir)..\..\cocos2dx\kazmath\include;$(ProjectDir)..\..\cocos2dx\platform\win32;$(ProjectDir)..\..\cocos2dx\platform\third_party\win32;$(ProjectDir)..\..\cocos2dx\platform\third_party\win32\pthread;$(ProjectDir)..\..\cocos2dx\platform\third_party\win32\OGLES;$(ProjectDir)..\..\cocos2dx\platform\third_party\win32\zlib;$(ProjectDir)..\..\CocosDenshion\include;$(ProjectDir)..\..\extensions\CocoGUILIB\BaseClasses;$(ProjectDir)..\..\extensions\CocoGUILIB\Drawable;$(ProjectDir)..\..\extensions\CocoGUILIB\UIWidgets;$(ProjectDir)..\..\extensions\CocoGUILIB\Action;$(ProjectDir)..\..\extensions\CocoGUILIB\System;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_LIB;CC_ENABLE_CHIPMUNK_INTEGRATION=1;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;COCOS2D_RELEASE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>
@@ -102,16 +102,13 @@
     <ClCompile Include="..\CCArmature\display\CCDecorativeDisplay.cpp" />
     <ClCompile Include="..\CCArmature\display\CCDisplayFactory.cpp" />
     <ClCompile Include="..\CCArmature\display\CCDisplayManager.cpp" />
-    <ClCompile Include="..\CCArmature\display\CCShaderNode.cpp" />
     <ClCompile Include="..\CCArmature\display\CCSkin.cpp" />
     <ClCompile Include="..\CCArmature\external_tool\CCTexture2DMutable.cpp" />
-    <ClCompile Include="..\CCArmature\external_tool\GLES-Render.cpp" />
     <ClCompile Include="..\CCArmature\external_tool\Json\CSContentJsonDictionary.cpp" />
     <ClCompile Include="..\CCArmature\external_tool\Json\lib_json\json_reader.cpp" />
     <ClCompile Include="..\CCArmature\external_tool\Json\lib_json\json_value.cpp" />
     <ClCompile Include="..\CCArmature\external_tool\Json\lib_json\json_writer.cpp" />
     <ClCompile Include="..\CCArmature\physics\CCColliderDetector.cpp" />
-    <ClCompile Include="..\CCArmature\physics\CCPhysicsWorld.cpp" />
     <ClCompile Include="..\CCArmature\utils\CCArmatureDataManager.cpp" />
     <ClCompile Include="..\CCArmature\utils\CCDataReaderHelper.cpp" />
     <ClCompile Include="..\CCArmature\utils\CCSpriteFrameCacheHelper.cpp" />
@@ -138,13 +135,48 @@
     <ClCompile Include="..\CCBReader\CCNode+CCBRelativePositioning.cpp" />
     <ClCompile Include="..\CCBReader\CCNodeLoader.cpp" />
     <ClCompile Include="..\CCBReader\CCNodeLoaderLibrary.cpp" />
+    <ClCompile Include="..\CCBReader\CCParticleSystemQuadExLoader.cpp" />
     <ClCompile Include="..\CCBReader\CCParticleSystemQuadLoader.cpp" />
     <ClCompile Include="..\CCBReader\CCScale9SpriteLoader.cpp" />
     <ClCompile Include="..\CCBReader\CCScrollViewLoader.cpp" />
     <ClCompile Include="..\CCBReader\CCSpriteLoader.cpp" />
+    <ClCompile Include="..\CocoGUILIB\Action\UIAction.cpp" />
+    <ClCompile Include="..\CocoGUILIB\Action\UIActionFrame.cpp" />
+    <ClCompile Include="..\CocoGUILIB\Action\UIActionManager.cpp" />
+    <ClCompile Include="..\CocoGUILIB\Action\UIActionNode.cpp" />
+    <ClCompile Include="..\CocoGUILIB\BaseClasses\UIRootWidget.cpp" />
+    <ClCompile Include="..\CocoGUILIB\BaseClasses\UIWidget.cpp" />
+    <ClCompile Include="..\CocoGUILIB\Layouts\Layout.cpp" />
+    <ClCompile Include="..\CocoGUILIB\Layouts\LayoutExecutant.cpp" />
+    <ClCompile Include="..\CocoGUILIB\Layouts\LayoutParameter.cpp" />
+    <ClCompile Include="..\CocoGUILIB\Layouts\UILayoutDefine.cpp" />
+    <ClCompile Include="..\CocoGUILIB\System\CCSReader.cpp" />
+    <ClCompile Include="..\CocoGUILIB\System\CocosGUI.cpp" />
+    <ClCompile Include="..\CocoGUILIB\System\UIHelper.cpp" />
+    <ClCompile Include="..\CocoGUILIB\System\UIInputManager.cpp" />
+    <ClCompile Include="..\CocoGUILIB\System\UILayer.cpp" />
+    <ClCompile Include="..\CocoGUILIB\UIWidgets\ScrollWidget\UIDragPanel.cpp" />
+    <ClCompile Include="..\CocoGUILIB\UIWidgets\ScrollWidget\UIListView.cpp" />
+    <ClCompile Include="..\CocoGUILIB\UIWidgets\ScrollWidget\UIPageView.cpp" />
+    <ClCompile Include="..\CocoGUILIB\UIWidgets\ScrollWidget\UIScrollView.cpp" />
+    <ClCompile Include="..\CocoGUILIB\UIWidgets\UIButton.cpp" />
+    <ClCompile Include="..\CocoGUILIB\UIWidgets\UICheckBox.cpp" />
+    <ClCompile Include="..\CocoGUILIB\UIWidgets\UIImageView.cpp" />
+    <ClCompile Include="..\CocoGUILIB\UIWidgets\UILabel.cpp" />
+    <ClCompile Include="..\CocoGUILIB\UIWidgets\UILabelAtlas.cpp" />
+    <ClCompile Include="..\CocoGUILIB\UIWidgets\UILabelBMFont.cpp" />
+    <ClCompile Include="..\CocoGUILIB\UIWidgets\UILoadingBar.cpp" />
+    <ClCompile Include="..\CocoGUILIB\UIWidgets\UINodeContainer.cpp" />
+    <ClCompile Include="..\CocoGUILIB\UIWidgets\UISlider.cpp" />
+    <ClCompile Include="..\CocoGUILIB\UIWidgets\UISwitch.cpp" />
+    <ClCompile Include="..\CocoGUILIB\UIWidgets\UITextButton.cpp" />
+    <ClCompile Include="..\CocoGUILIB\UIWidgets\UITextField.cpp" />
+    <ClCompile Include="..\CocostudioReader\CCSSceneReader.cpp" />
+    <ClCompile Include="..\CocostudioReader\DictionaryHelper.cpp" />
     <ClCompile Include="..\Components\CCComAttribute.cpp" />
     <ClCompile Include="..\Components\CCComAudio.cpp" />
     <ClCompile Include="..\Components\CCComController.cpp" />
+    <ClCompile Include="..\Components\CCComRender.cpp" />
     <ClCompile Include="..\Components\CCInputDelegate.cpp" />
     <ClCompile Include="..\GUI\CCControlExtension\CCControl.cpp" />
     <ClCompile Include="..\GUI\CCControlExtension\CCControlButton.cpp" />
@@ -164,6 +196,7 @@
     <ClCompile Include="..\GUI\CCScrollView\CCSorting.cpp" />
     <ClCompile Include="..\GUI\CCScrollView\CCTableView.cpp" />
     <ClCompile Include="..\GUI\CCScrollView\CCTableViewCell.cpp" />
+    <ClCompile Include="..\GUI\WebView\CCWebViewNode.cpp" />
     <ClCompile Include="..\LocalStorage\LocalStorage.cpp" />
     <ClCompile Include="..\network\HttpClient.cpp" />
     <ClCompile Include="..\network\Websocket.cpp" />
@@ -178,15 +211,24 @@
     <ClCompile Include="..\spine\AttachmentLoader.cpp" />
     <ClCompile Include="..\spine\Bone.cpp" />
     <ClCompile Include="..\spine\BoneData.cpp" />
-    <ClCompile Include="..\spine\CCSkeleton.cpp" />
-    <ClCompile Include="..\spine\CCSkeletonAnimation.cpp" />
+    <ClCompile Include="..\spine\BoundingBoxAttachment.cpp" />
+    <ClCompile Include="..\spine\Event.cpp" />
+    <ClCompile Include="..\spine\EventData.cpp" />
     <ClCompile Include="..\spine\extension.cpp" />
+    <ClCompile Include="..\spine\IkConstraint.cpp" />
+    <ClCompile Include="..\spine\IkConstraintData.cpp" />
     <ClCompile Include="..\spine\Json.cpp" />
+    <ClCompile Include="..\spine\MeshAttachment.cpp" />
+    <ClCompile Include="..\spine\PolygonBatch.cpp" />
     <ClCompile Include="..\spine\RegionAttachment.cpp" />
     <ClCompile Include="..\spine\Skeleton.cpp" />
+    <ClCompile Include="..\spine\SkeletonAnimation.cpp" />
+    <ClCompile Include="..\spine\SkeletonBounds.cpp" />
     <ClCompile Include="..\spine\SkeletonData.cpp" />
     <ClCompile Include="..\spine\SkeletonJson.cpp" />
+    <ClCompile Include="..\spine\SkeletonRenderer.cpp" />
     <ClCompile Include="..\spine\Skin.cpp" />
+    <ClCompile Include="..\spine\SkinnedMeshAttachment.cpp" />
     <ClCompile Include="..\spine\Slot.cpp" />
     <ClCompile Include="..\spine\SlotData.cpp" />
     <ClCompile Include="..\spine\spine-cocos2dx.cpp" />
@@ -204,10 +246,8 @@
     <ClInclude Include="..\CCArmature\display\CCDecorativeDisplay.h" />
     <ClInclude Include="..\CCArmature\display\CCDisplayFactory.h" />
     <ClInclude Include="..\CCArmature\display\CCDisplayManager.h" />
-    <ClInclude Include="..\CCArmature\display\CCShaderNode.h" />
     <ClInclude Include="..\CCArmature\display\CCSkin.h" />
     <ClInclude Include="..\CCArmature\external_tool\CCTexture2DMutable.h" />
-    <ClInclude Include="..\CCArmature\external_tool\GLES-Render.h" />
     <ClInclude Include="..\CCArmature\external_tool\Json\CSContentJsonDictionary.h" />
     <ClInclude Include="..\CCArmature\external_tool\Json\lib_json\autolink.h" />
     <ClInclude Include="..\CCArmature\external_tool\Json\lib_json\config.h" />
@@ -221,10 +261,8 @@
     <ClInclude Include="..\CCArmature\external_tool\Json\lib_json\writer.h" />
     <ClInclude Include="..\CCArmature\external_tool\sigslot.h" />
     <ClInclude Include="..\CCArmature\physics\CCColliderDetector.h" />
-    <ClInclude Include="..\CCArmature\physics\CCPhysicsWorld.h" />
     <ClInclude Include="..\CCArmature\utils\CCArmatureDataManager.h" />
     <ClInclude Include="..\CCArmature\utils\CCArmatureDefine.h" />
-    <ClInclude Include="..\CCArmature\utils\CCConstValue.h" />
     <ClInclude Include="..\CCArmature\utils\CCDataReaderHelper.h" />
     <ClInclude Include="..\CCArmature\utils\CCSpriteFrameCacheHelper.h" />
     <ClInclude Include="..\CCArmature\utils\CCTransformHelp.h" />
@@ -254,13 +292,50 @@
     <ClInclude Include="..\CCBReader\CCNodeLoader.h" />
     <ClInclude Include="..\CCBReader\CCNodeLoaderLibrary.h" />
     <ClInclude Include="..\CCBReader\CCNodeLoaderListener.h" />
+    <ClInclude Include="..\CCBReader\CCParticleSystemQuadExLoader.h" />
     <ClInclude Include="..\CCBReader\CCParticleSystemQuadLoader.h" />
     <ClInclude Include="..\CCBReader\CCScale9SpriteLoader.h" />
     <ClInclude Include="..\CCBReader\CCScrollViewLoader.h" />
     <ClInclude Include="..\CCBReader\CCSpriteLoader.h" />
+    <ClInclude Include="..\CocoGUILIB\Action\UIAction.h" />
+    <ClInclude Include="..\CocoGUILIB\Action\UIActionFrame.h" />
+    <ClInclude Include="..\CocoGUILIB\Action\UIActionManager.h" />
+    <ClInclude Include="..\CocoGUILIB\Action\UIActionNode.h" />
+    <ClInclude Include="..\CocoGUILIB\BaseClasses\UIRootWidget.h" />
+    <ClInclude Include="..\CocoGUILIB\BaseClasses\UIWidget.h" />
+    <ClInclude Include="..\CocoGUILIB\Layouts\Layout.h" />
+    <ClInclude Include="..\CocoGUILIB\Layouts\LayoutExecutant.h" />
+    <ClInclude Include="..\CocoGUILIB\Layouts\LayoutParameter.h" />
+    <ClInclude Include="..\CocoGUILIB\Layouts\UILayoutDefine.h" />
+    <ClInclude Include="..\CocoGUILIB\System\CCSReader.h" />
+    <ClInclude Include="..\CocoGUILIB\System\CocosGUI.h" />
+    <ClInclude Include="..\CocoGUILIB\System\UIHelper.h" />
+    <ClInclude Include="..\CocoGUILIB\System\UIInputManager.h" />
+    <ClInclude Include="..\CocoGUILIB\System\UILayer.h" />
+    <ClInclude Include="..\CocoGUILIB\UIWidgets\Compatible\CompatibleClasses.h" />
+    <ClInclude Include="..\CocoGUILIB\UIWidgets\ScrollWidget\UIDragPanel.h" />
+    <ClInclude Include="..\CocoGUILIB\UIWidgets\ScrollWidget\UIListView.h" />
+    <ClInclude Include="..\CocoGUILIB\UIWidgets\ScrollWidget\UIPageView.h" />
+    <ClInclude Include="..\CocoGUILIB\UIWidgets\ScrollWidget\UIScrollInterface.h" />
+    <ClInclude Include="..\CocoGUILIB\UIWidgets\ScrollWidget\UIScrollView.h" />
+    <ClInclude Include="..\CocoGUILIB\UIWidgets\UIButton.h" />
+    <ClInclude Include="..\CocoGUILIB\UIWidgets\UICheckBox.h" />
+    <ClInclude Include="..\CocoGUILIB\UIWidgets\UIImageView.h" />
+    <ClInclude Include="..\CocoGUILIB\UIWidgets\UILabel.h" />
+    <ClInclude Include="..\CocoGUILIB\UIWidgets\UILabelAtlas.h" />
+    <ClInclude Include="..\CocoGUILIB\UIWidgets\UILabelBMFont.h" />
+    <ClInclude Include="..\CocoGUILIB\UIWidgets\UILoadingBar.h" />
+    <ClInclude Include="..\CocoGUILIB\UIWidgets\UINodeContainer.h" />
+    <ClInclude Include="..\CocoGUILIB\UIWidgets\UISlider.h" />
+    <ClInclude Include="..\CocoGUILIB\UIWidgets\UISwitch.h" />
+    <ClInclude Include="..\CocoGUILIB\UIWidgets\UITextButton.h" />
+    <ClInclude Include="..\CocoGUILIB\UIWidgets\UITextField.h" />
+    <ClInclude Include="..\CocostudioReader\CCSSceneReader.h" />
+    <ClInclude Include="..\CocostudioReader\DictionaryHelper.h" />
     <ClInclude Include="..\Components\CCComAttribute.h" />
     <ClInclude Include="..\Components\CCComAudio.h" />
     <ClInclude Include="..\Components\CCComController.h" />
+    <ClInclude Include="..\Components\CCComRender.h" />
     <ClInclude Include="..\Components\CCInputDelegate.h" />
     <ClInclude Include="..\GUI\CCControlExtension\CCControl.h" />
     <ClInclude Include="..\GUI\CCControlExtension\CCControlButton.h" />
@@ -284,6 +359,7 @@
     <ClInclude Include="..\GUI\CCScrollView\CCSorting.h" />
     <ClInclude Include="..\GUI\CCScrollView\CCTableView.h" />
     <ClInclude Include="..\GUI\CCScrollView\CCTableViewCell.h" />
+    <ClInclude Include="..\GUI\WebView\CCWebViewNode.h" />
     <ClInclude Include="..\LocalStorage\LocalStorage.h" />
     <ClInclude Include="..\network\HttpClient.h" />
     <ClInclude Include="..\network\HttpRequest.h" />
@@ -300,15 +376,24 @@
     <ClInclude Include="..\spine\AttachmentLoader.h" />
     <ClInclude Include="..\spine\Bone.h" />
     <ClInclude Include="..\spine\BoneData.h" />
-    <ClInclude Include="..\spine\CCSkeleton.h" />
-    <ClInclude Include="..\spine\CCSkeletonAnimation.h" />
+    <ClInclude Include="..\spine\BoundingBoxAttachment.h" />
+    <ClInclude Include="..\spine\Event.h" />
+    <ClInclude Include="..\spine\EventData.h" />
     <ClInclude Include="..\spine\extension.h" />
+    <ClInclude Include="..\spine\IkConstraint.h" />
+    <ClInclude Include="..\spine\IkConstraintData.h" />
     <ClInclude Include="..\spine\Json.h" />
+    <ClInclude Include="..\spine\MeshAttachment.h" />
+    <ClInclude Include="..\spine\PolygonBatch.h" />
     <ClInclude Include="..\spine\RegionAttachment.h" />
     <ClInclude Include="..\spine\Skeleton.h" />
+    <ClInclude Include="..\spine\SkeletonAnimation.h" />
+    <ClInclude Include="..\spine\SkeletonBounds.h" />
     <ClInclude Include="..\spine\SkeletonData.h" />
     <ClInclude Include="..\spine\SkeletonJson.h" />
+    <ClInclude Include="..\spine\SkeletonRenderer.h" />
     <ClInclude Include="..\spine\Skin.h" />
+    <ClInclude Include="..\spine\SkinnedMeshAttachment.h" />
     <ClInclude Include="..\spine\Slot.h" />
     <ClInclude Include="..\spine\SlotData.h" />
     <ClInclude Include="..\spine\spine-cocos2dx.h" />

@@ -130,6 +130,7 @@ bool AssetsManager::checkUpdate()
     curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, getVersionCode);
     curl_easy_setopt(_curl, CURLOPT_WRITEDATA, &_version);
     if (_connectionTimeout) curl_easy_setopt(_curl, CURLOPT_CONNECTTIMEOUT, _connectionTimeout);
+	curl_easy_setopt(_curl, CURLOPT_NOSIGNAL, 1L);
     res = curl_easy_perform(_curl);
     
     if (res != 0)
@@ -312,6 +313,7 @@ bool AssetsManager::uncompress()
                     CCLOG("can not read zip file %s, error code is %d", fileName, error);
                     unzCloseCurrentFile(zipfile);
                     unzClose(zipfile);
+					fclose(out);
                     return false;
                 }
                 
@@ -339,7 +341,7 @@ bool AssetsManager::uncompress()
     }
     
     CCLOG("end uncompressing");
-    
+    unzClose(zipfile);
     return true;
 }
 
@@ -421,6 +423,7 @@ bool AssetsManager::downLoad()
     curl_easy_setopt(_curl, CURLOPT_NOPROGRESS, false);
     curl_easy_setopt(_curl, CURLOPT_PROGRESSFUNCTION, assetsManagerProgressFunc);
     curl_easy_setopt(_curl, CURLOPT_PROGRESSDATA, this);
+	curl_easy_setopt(_curl, CURLOPT_NOSIGNAL, 1L);
     res = curl_easy_perform(_curl);
     curl_easy_cleanup(_curl);
     if (res != 0)

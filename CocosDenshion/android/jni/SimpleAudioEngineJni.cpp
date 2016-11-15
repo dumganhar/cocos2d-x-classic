@@ -440,4 +440,40 @@ extern "C"
         methodInfo.env->CallStaticVoidMethod(methodInfo.classID, methodInfo.methodID);
         methodInfo.env->DeleteLocalRef(methodInfo.classID);
     }
+
+	///////////////////////////////////////
+	// vibrate
+	void vibrateJNI(long time)
+	{
+		JniMethodInfo methodInfo;
+		if (! getStaticMethodInfo(methodInfo, "vibrate", "(J)V"))
+		{
+			return;
+		}
+		methodInfo.env->CallStaticVoidMethod(methodInfo.classID, methodInfo.methodID, time);
+		methodInfo.env->DeleteLocalRef(methodInfo.classID);
+	}
+	void vibrateWithPatternJNI(long pattern[], int repeat)
+	{
+		JniMethodInfo methodInfo;
+		if (! getStaticMethodInfo(methodInfo, "vibrateWithPattern", "([JI)V"))
+		{
+			return;
+		}
+		int elements = sizeof(pattern);
+		jlongArray jLongArray = methodInfo.env->NewLongArray(elements);
+		methodInfo.env->SetLongArrayRegion(jLongArray, 0, elements, (jlong*) pattern);
+		methodInfo.env->CallStaticVoidMethod(methodInfo.classID, methodInfo.methodID, jLongArray, repeat);
+		methodInfo.env->DeleteLocalRef(methodInfo.classID);
+	}
+	void cancelVibrateJNI()
+	{
+		JniMethodInfo methodInfo;
+		if (! getStaticMethodInfo(methodInfo, "cancelVibrate", "()V"))
+		{
+			return;
+		}
+		methodInfo.env->CallStaticVoidMethod(methodInfo.classID, methodInfo.methodID);
+		methodInfo.env->DeleteLocalRef(methodInfo.classID);
+	}
 }

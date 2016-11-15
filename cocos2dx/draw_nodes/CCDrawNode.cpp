@@ -26,6 +26,7 @@
 #include "CCGL.h"
 #include "support/CCNotificationCenter.h"
 #include "CCEventType.h"
+#include "CCDirector.h"
 
 NS_CC_BEGIN
 
@@ -231,6 +232,8 @@ void CCDrawNode::render()
 
 void CCDrawNode::draw()
 {
+	CCDirector::sharedDirector()->flushDraw();
+
     CC_NODE_DRAW_SETUP();
     ccGLBlendFunc(m_sBlendFunc.src, m_sBlendFunc.dst);
     
@@ -346,7 +349,7 @@ void CCDrawNode::drawPolygon(CCPoint *verts, unsigned int count, const ccColor4F
 		ccVertex2F n1 = v2fnormalize(v2fperp(v2fsub(v1, v0)));
 		ccVertex2F n2 = v2fnormalize(v2fperp(v2fsub(v2, v1)));
 		
-		ccVertex2F offset = v2fmult(v2fadd(n1, n2), 1.0/(v2fdot(n1, n2) + 1.0));
+		ccVertex2F offset = v2fmult(v2fadd(n1, n2), (float)(1.0/(v2fdot(n1, n2) + 1.0)));
         struct ExtrudeVerts tmp = {offset, n2};
 		extrude[i] = tmp;
 	}
@@ -360,7 +363,7 @@ void CCDrawNode::drawPolygon(CCPoint *verts, unsigned int count, const ccColor4F
 	ccV2F_C4B_T2F_Triangle *triangles = (ccV2F_C4B_T2F_Triangle *)(m_pBuffer + m_nBufferCount);
 	ccV2F_C4B_T2F_Triangle *cursor = triangles;
 	
-	float inset = (outline == 0.0 ? 0.5 : 0.0);
+	float inset = (float)(outline == 0.0 ? 0.5 : 0.0);
 	for(unsigned int i = 0; i < count-2; i++)
     {
 		ccVertex2F v0 = v2fsub(__v2f(verts[0  ]), v2fmult(extrude[0  ].offset, inset));

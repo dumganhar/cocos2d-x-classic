@@ -42,7 +42,7 @@ public:
 
 static inline unsigned int getHashCodeByString(const char *key)
 {
-	unsigned int len = strlen(key);
+	unsigned int len = static_cast<unsigned int>(strlen(key));
 	const char *end=key+len;
 	unsigned int hash;
 
@@ -209,6 +209,13 @@ public:
     @param[in]        pszFilePath        The path of the effect file,or the FileName of T_SoundResInfo
     */
     void unloadEffect(const char* pszFilePath);
+    
+	void useOpenSL(bool bUse);
+	//////////////////////////////////////////////////////
+	// vibrate
+	void vibrate(long time);
+	void vibrateWithPattern(long pattern[], int repeat);
+	void cancelVibrate();
 };
 
 } // end of namespace CocosDenshion

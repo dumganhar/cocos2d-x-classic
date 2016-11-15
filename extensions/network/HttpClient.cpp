@@ -90,6 +90,7 @@ static int processPostTask(CCHttpRequest *request, write_callback callback, void
 static int processPutTask(CCHttpRequest *request, write_callback callback, void *stream, int32_t *errorCode, write_callback headerCallback, void *headerStream);
 static int processDeleteTask(CCHttpRequest *request, write_callback callback, void *stream, int32_t *errorCode, write_callback headerCallback, void *headerStream);
 // int processDownloadTask(HttpRequest *task, write_callback callback, void *stream, int32_t *errorCode);
+static void processResponse(CCHttpResponse* response, char* errorBuffer);
 
 
 // Worker thread
@@ -128,70 +129,9 @@ static void* networkThread(void *data)
         // Create a HttpResponse object, the default setting is http access failed
         CCHttpResponse *response = new CCHttpResponse(request);
         
-        // request's refcount = 2 here, it's retained by HttpRespose constructor
-        request->release();
-        // ok, refcount = 1 now, only HttpResponse hold it.
-        
-        int32_t responseCode = -1;
-        int retValue = 0;
 
-        // Process the request -> get response packet
-        switch (request->getRequestType())
-        {
-            case CCHttpRequest::kHttpGet: // HTTP GET
-                retValue = processGetTask(request,
-                                          writeData, 
-                                          response->getResponseData(), 
-                                          &responseCode,
-                                          writeHeaderData,
-                                          response->getResponseHeader());
-                break;
-            
-            case CCHttpRequest::kHttpPost: // HTTP POST
-                retValue = processPostTask(request,
-                                           writeData, 
-                                           response->getResponseData(), 
-                                           &responseCode,
-                                           writeHeaderData,
-                                           response->getResponseHeader());
-                break;
-
-            case CCHttpRequest::kHttpPut:
-                retValue = processPutTask(request,
-                                          writeData,
-                                          response->getResponseData(),
-                                          &responseCode,
-                                          writeHeaderData,
-                                          response->getResponseHeader());
-                break;
-
-            case CCHttpRequest::kHttpDelete:
-                retValue = processDeleteTask(request,
-                                             writeData,
-                                             response->getResponseData(),
-                                             &responseCode,
-                                             writeHeaderData,
-                                             response->getResponseHeader());
-                break;
-            
-            default:
-                CCAssert(true, "CCHttpClient: unkown request type, only GET and POSt are supported");
-                break;
-        }
-                
-        // write data to HttpResponse
-        response->setResponseCode(responseCode);
-        
-        if (retValue != 0) 
-        {
-            response->setSucceed(false);
-            response->setErrorBuffer(s_errorBuffer);
-        }
-        else
-        {
-            response->setSucceed(true);
-        }
-
+		processResponse(response,s_errorBuffer);
+     
         
         // add response packet into queue
         pthread_mutex_lock(&s_responseQueueMutex);
@@ -226,6 +166,72 @@ static void* networkThread(void *data)
     
     return 0;
 }
+// Process Response
+static void processResponse(CCHttpResponse* response, char* errorBuffer)
+{
+	CCHttpRequest *request = response->getHttpRequest();
+	int32_t responseCode = -1;
+	int retValue = 0;
+
+	// Process the request -> get response packet
+	switch (request->getRequestType())
+	{
+	case CCHttpRequest::kHttpGet: // HTTP GET
+		retValue = processGetTask(request,
+			writeData, 
+			response->getResponseData(), 
+			&responseCode,
+			writeHeaderData,
+			response->getResponseHeader());
+		break;
+
+	case CCHttpRequest::kHttpPost: // HTTP POST
+		retValue = processPostTask(request,
+			writeData, 
+			response->getResponseData(), 
+			&responseCode,
+			writeHeaderData,
+			response->getResponseHeader());
+		break;
+
+	case CCHttpRequest::kHttpPut:
+		retValue = processPutTask(request,
+			writeData,
+			response->getResponseData(),
+			&responseCode,
+			writeHeaderData,
+			response->getResponseHeader());
+		break;
+
+	case CCHttpRequest::kHttpDelete:
+		retValue = processDeleteTask(request,
+			writeData,
+			response->getResponseData(),
+			&responseCode,
+			writeHeaderData,
+			response->getResponseHeader());
+		break;
+
+	default:
+		CCAssert(true, "CCHttpClient: unkown request type, only GET and POSt are supported");
+		break;
+	}
+
+	// write data to HttpResponse
+	response->setResponseCode(responseCode);
+
+	if (retValue != 0) 
+	{
+		response->setSucceed(false);
+		response->setErrorBuffer(errorBuffer);
+	}
+	else
+	{
+		response->setSucceed(true);
+	}
+}
+
+
 
 //Configure curl's timeout property
 static bool configureCURL(CURL *handle)
@@ -250,6 +256,9 @@ static bool configureCURL(CURL *handle)
     curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0L);
     curl_easy_setopt(handle, CURLOPT_SSL_VERIFYHOST, 0L);
 
+	// FIXED #3224: The subthread of CCHttpClient interrupts main thread if timeout comes.
+	// Document is here: http://curl.haxx.se/libcurl/c/curl_easy_setopt.html#CURLOPTNOSIGNAL 
+	curl_easy_setopt(handle, CURLOPT_NOSIGNAL, 1L);
     return true;
 }
 
@@ -468,6 +477,11 @@ void CCHttpClient::send(CCHttpRequest* request)
 void CCHttpClient::dispatchResponseCallbacks(float delta)
 {
     // CCLog("CCHttpClient::dispatchResponseCallbacks is running");
+
+	if (s_responseQueue == NULL)
+	{
+		return;
+	}
     
     CCHttpResponse* response = NULL;
     
@@ -493,6 +507,8 @@ void CCHttpClient::dispatchResponseCallbacks(float delta)
         }
         
         response->release();
+		// do not release in other thread
+		request->release();
     }
     
     if (0 == s_asyncRequestCount) 

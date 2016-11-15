@@ -77,6 +77,7 @@ bool CCProgressTimer::initWithSprite(CCSprite* sp)
     setPercentage(0.0f);
     m_pVertexData = NULL;
     m_nVertexDataCount = 0;
+	m_bOpacityModifyRGB = false;
 
     setAnchorPoint(ccp(0.5f,0.5f));
     m_eType = kCCProgressTimerTypeRadial;
@@ -149,14 +150,32 @@ void CCProgressTimer::setReverseProgress(bool reverse)
     }
 }
 
+void CCProgressTimer::setOpacity(GLubyte opacity)
+{
+	CCNodeRGBA::setOpacity(opacity);
+
+	updateColor();
+}
+
 void CCProgressTimer::setOpacityModifyRGB(bool bValue)
 {
-    CC_UNUSED_PARAM(bValue);
+	if (m_bOpacityModifyRGB != bValue)
+	{
+		m_bOpacityModifyRGB = bValue;
+		updateColor();
+	}
 }
 
 bool CCProgressTimer::isOpacityModifyRGB(void)
 {
-    return false;
+    return m_bOpacityModifyRGB;
+}
+
+void CCProgressTimer::updateDisplayedOpacity(GLubyte opacity)
+{
+	CCNodeRGBA::updateDisplayedOpacity(opacity);
+
+	updateColor();
 }
 
 // Interval
@@ -203,10 +222,26 @@ void CCProgressTimer::updateColor(void)
     if (m_pVertexData)
     {
         ccColor4B sc = m_pSprite->getQuad().tl.colors;
+		if (isCascadeOpacityEnabled())
+		{
+			sc.a = (GLubyte)(sc.a * (getDisplayedOpacity() / 255.0f));
+		}
+		if (isCascadeColorEnabled())
+		{
+			sc.r = (GLubyte)(sc.r * (getDisplayedColor().r / 255.0f));
+			sc.g = (GLubyte)(sc.g * (getDisplayedColor().g / 255.0f));
+			sc.b = (GLubyte)(sc.b * (getDisplayedColor().b / 255.0f));
+		}
+		if (m_bOpacityModifyRGB)
+		{
+			sc.r = (GLubyte)(sc.r * (getDisplayedOpacity()/255.0f));
+			sc.g = (GLubyte)(sc.g * (getDisplayedOpacity()/255.0f));
+			sc.b = (GLubyte)(sc.b * (getDisplayedOpacity()/255.0f));
+		}
         for (int i = 0; i < m_nVertexDataCount; ++i)
         {
             m_pVertexData[i].colors = sc;
-        }            
+        }
     }
 }
 
@@ -491,6 +526,12 @@ void CCProgressTimer::draw(void)
     if( ! m_pVertexData || ! m_pSprite)
         return;
 
+    if (!m_pSprite->getTexture())
+    {
+        return;
+    }
+
+	CCDirector::sharedDirector()->flushDraw();
     CC_NODE_DRAW_SETUP();
 
     ccGLBlendFunc( m_pSprite->getBlendFunc().src, m_pSprite->getBlendFunc().dst );
@@ -534,8 +575,15 @@ void CCProgressTimer::draw(void)
             glDrawArrays(GL_TRIANGLE_STRIP, 4, m_nVertexDataCount/2);
             // 2 draw calls
             CC_INCREMENT_GL_DRAWN_BATCHES_AND_VERTICES(2, m_nVertexDataCount);
+#if CC_TARGET_PLATFORM == CC_PLATFORM_WIN32
+			CCDirector::sharedDirector()->addDrawTextureIDToVec(m_pSprite->getTexture()->getName());
+#endif
         }
     }
+
+#if CC_TARGET_PLATFORM == CC_PLATFORM_WIN32
+	CCDirector::sharedDirector()->addDrawTextureIDToVec(m_pSprite->getTexture()->getName());
+#endif
 }
 
 NS_CC_END

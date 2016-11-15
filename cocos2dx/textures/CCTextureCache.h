@@ -52,13 +52,16 @@ class CCImage;
 * Once the texture is loaded, the next time it will return
 * a reference of the previously loaded texture reducing GPU & CPU memory
 */
+
+typedef void (*texture_addimage_callback)(const char*); 
+
 class CC_DLL CCTextureCache : public CCObject
 {
 protected:
     CCDictionary* m_pTextures;
     //pthread_mutex_t                *m_pDictLock;
 
-
+	texture_addimage_callback m_addImageCallBack;
 private:
     /// todo: void addImageWithAsyncObject(CCAsyncObject* async);
     void addImageAsyncCallBack(float dt);
@@ -147,7 +150,7 @@ public:
     *
     * @since v1.0
     */
-    void dumpCachedTextureInfo();
+    int dumpCachedTextureInfo();
     
     /** Returns a Texture2D object given an PVR filename
     * If the file image was not previously loaded, it will create a new CCTexture2D
@@ -160,6 +163,10 @@ public:
      *  object and it will return it. Otherwise it will return a reference of a previously loaded image
      */
     CCTexture2D* addETCImage(const char* filename);
+
+	void setAddImageCallback(texture_addimage_callback callBack){m_addImageCallBack = callBack;}
+	texture_addimage_callback getAddImageCallBack(){return m_addImageCallBack;} 
+
 
     /** Reload all textures
     It's only useful when the value of CC_ENABLE_CACHE_TEXTURE_DATA is 1

@@ -84,8 +84,11 @@ protected:
     bool   m_bSpriteFrameRotated;
     CCRect m_capInsetsInternal;
     bool m_positionsAreDirty;
-    
-    CCSpriteBatchNode* _scale9Image;
+  
+    CCNode* _scale9Image;
+
+	CCTexture2D* m_pTexture;
+
     CCSprite* _topLeft;
     CCSprite* _top;
     CCSprite* _topRight;
@@ -110,8 +113,9 @@ public:
     
     virtual bool init();
 
-    virtual bool initWithBatchNode(CCSpriteBatchNode* batchnode, CCRect rect, bool rotated, CCRect capInsets);
-    virtual bool initWithBatchNode(CCSpriteBatchNode* batchnode, CCRect rect, CCRect capInsets);
+    virtual bool initWithBatchNode(CCNode* node, CCRect rect, bool rotated, CCRect capInsets);
+    virtual bool initWithBatchNode(CCNode* node, CCRect rect, CCRect capInsets);
+
     /**
      * Initializes a 9-slice sprite with a texture file, a delimitation zone and
      * with the specified cap insets.
@@ -312,9 +316,12 @@ public:
     virtual void setColor(const ccColor3B& color);
 	virtual const ccColor3B& getColor();
 
-    virtual bool updateWithBatchNode(CCSpriteBatchNode* batchnode, CCRect rect, bool rotated, CCRect capInsets);
+    virtual bool updateWithBatchNode(CCNode* batchnode, CCRect rect, bool rotated, CCRect capInsets);
 
     virtual void setSpriteFrame(CCSpriteFrame * spriteFrame);
+    
+    virtual void updateDisplayedOpacity(GLubyte parentOpacity);
+    virtual void updateDisplayedColor(const cocos2d::ccColor3B& parentColor);
 };
 
 // end of GUI group

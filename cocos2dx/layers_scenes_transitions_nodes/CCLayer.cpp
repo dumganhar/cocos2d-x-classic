@@ -38,6 +38,7 @@ THE SOFTWARE.
 #include "support/TransformUtils.h"
 // extern
 #include "kazmath/GL/matrix.h"
+#include "support/CCProfiling.h"
 
 NS_CC_BEGIN
 
@@ -246,7 +247,7 @@ void CCLayer::setAccelerometerInterval(double interval) {
         if (m_bRunning)
         {
             CCDirector* pDirector = CCDirector::sharedDirector();
-            pDirector->getAccelerometer()->setAccelerometerInterval(interval);
+            pDirector->getAccelerometer()->setAccelerometerInterval((float)interval);
         }
     }
 }
@@ -573,7 +574,7 @@ void CCLayerRGBA::setColor(const ccColor3B& color)
 
 void CCLayerRGBA::updateDisplayedOpacity(GLubyte parentOpacity)
 {
-	_displayedOpacity = _realOpacity * parentOpacity/255.0;
+	_displayedOpacity = (GLubyte)(_realOpacity * parentOpacity/255.0);
     
     if (_cascadeOpacityEnabled)
     {
@@ -591,9 +592,9 @@ void CCLayerRGBA::updateDisplayedOpacity(GLubyte parentOpacity)
 
 void CCLayerRGBA::updateDisplayedColor(const ccColor3B& parentColor)
 {
-	_displayedColor.r = _realColor.r * parentColor.r/255.0;
-	_displayedColor.g = _realColor.g * parentColor.g/255.0;
-	_displayedColor.b = _realColor.b * parentColor.b/255.0;
+	_displayedColor.r = GLubyte(_realColor.r * parentColor.r/255.0);
+	_displayedColor.g = GLubyte(_realColor.g * parentColor.g/255.0);
+	_displayedColor.b = GLubyte(_realColor.b * parentColor.b/255.0);
     
     if (_cascadeColorEnabled)
     {
@@ -771,6 +772,8 @@ void CCLayerColor::updateColor()
 
 void CCLayerColor::draw()
 {
+	CC_PROFILER_HELPER;
+	CCDirector::sharedDirector()->flushDraw();
     CC_NODE_DRAW_SETUP();
 
     ccGLEnableVertexAttribs( kCCVertexAttribFlag_Position | kCCVertexAttribFlag_Color );

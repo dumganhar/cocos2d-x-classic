@@ -30,10 +30,12 @@ THE SOFTWARE.
 #include "support/tinyxml2/tinyxml2.h"
 #include "support/zip_support/unzip.h"
 #include <stack>
+#include <algorithm>
 
 using namespace std;
 
-#if (CC_TARGET_PLATFORM != CC_PLATFORM_IOS) && (CC_TARGET_PLATFORM != CC_PLATFORM_MAC)
+// always use self plist parse
+#if 1//(CC_TARGET_PLATFORM != CC_PLATFORM_IOS) && (CC_TARGET_PLATFORM != CC_PLATFORM_MAC)
 
 NS_CC_BEGIN
 
@@ -88,16 +90,33 @@ public:
 
     CCDictionary* dictionaryWithContentsOfFile(const char *pFileName)
     {
-        m_eResultType = SAX_RESULT_DICT;
-        CCSAXParser parser;
-
-        if (false == parser.init("UTF-8"))
         {
-            return NULL;
-        }
-        parser.setDelegator(this);
+            m_eResultType = SAX_RESULT_DICT;
+            CCSAXParser parser;
 
-        parser.parse(pFileName);
+            if (false == parser.init("UTF-8"))
+            {
+                return NULL;
+            }
+
+            parser.setDelegator(this);
+            parser.parsePlain(pFileName);
+        }
+
+        if (!m_pRootDict)
+        {
+            m_eResultType = SAX_RESULT_DICT;
+            CCSAXParser parser;
+
+            if (false == parser.init("UTF-8"))
+            {
+                return NULL;
+            }
+
+            parser.setDelegator(this);
+            parser.parseEncrypt(pFileName);
+        }
+
         return m_pRootDict;
     }
 
@@ -597,6 +616,13 @@ std::string CCFileUtils::getPathForFilename(const std::string& filename, const s
 std::string CCFileUtils::fullPathForFilename(const char* pszFileName)
 {
     CCAssert(pszFileName != NULL, "CCFileUtils: Invalid path");
+
+    //canny add for assert protect
+    if(pszFileName==NULL || strlen(pszFileName)==0)
+    {
+        CCLOG("[CCFileUtils::fullPathForFilename] Invalid path: (%s)", pszFileName);
+        return pszFileName;
+    }
     
     std::string strFileName = pszFileName;
     if (isAbsolutePath(pszFileName))
@@ -604,6 +630,8 @@ std::string CCFileUtils::fullPathForFilename(const char* pszFileName)
         //CCLOG("Return absolute path( %s ) directly.", pszFileName);
         return pszFileName;
     }
+
+    //CCLOG("[CCFileUtils::fullPathForFilename] start: (%s)", pszFileName);
     
     // Already Cached ?
     std::map<std::string, std::string>::iterator cacheIter = m_fullPathCache.find(pszFileName);
@@ -631,7 +659,7 @@ std::string CCFileUtils::fullPathForFilename(const char* pszFileName)
             {
                 // Using the filename passed in as key.
                 m_fullPathCache.insert(std::pair<std::string, std::string>(pszFileName, fullpath));
-                //CCLOG("Returning path: %s", fullpath.c_str());
+                //CCLOG("[CCFileUtils::fullPathForFilename] Returning path: %s", fullpath.c_str());
                 return fullpath;
             }
         }
@@ -640,7 +668,39 @@ std::string CCFileUtils::fullPathForFilename(const char* pszFileName)
     //CCLOG("cocos2d: fullPathForFilename: No file found at %s. Possible missing file.", pszFileName);
 
     // The file wasn't found, return the file name passed in.
+    //CCLOG("[CCFileUtils::fullPathForFilename] Failed: %s", pszFileName);
+
     return pszFileName;
+}
+
+std::string CCFileUtils::getStandardFullPath(std::string path)
+{
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_WIN32)
+	std::replace(path.begin(), path.end(), '/', '\\');
+
+	size_t lookHere = 0;
+	size_t foundHere;
+
+	std::string from("\\\\");
+	std::string to("\\");
+
+#else
+	std::replace(path.begin(), path.end(), '\\', '/');
+
+	size_t lookHere = 0;
+	size_t foundHere;
+
+	std::string from("//");
+	std::string to("/");
+#endif
+
+	while((foundHere = path.find(from, lookHere)) != string::npos) 
+	{
+		path.replace(foundHere, from.size(), to);
+		lookHere = foundHere + from.size();
+	}
+
+	return path;
 }
 
 const char* CCFileUtils::fullPathFromRelativeFile(const char *pszFilename, const char *pszRelativeFile)
@@ -697,6 +757,11 @@ void CCFileUtils::setSearchPaths(const std::vector<std::string>& searchPaths)
 {
     bool bExistDefaultRootPath = false;
 
+//     for(int i=0;i<m_searchPathArray.size();i++)
+//     {
+//         CCLOG("[CCFileUtils::setSearchPaths] begin path=(%s)", m_searchPathArray[i].c_str());
+//     }
+
     m_fullPathCache.clear();
     m_searchPathArray.clear();
     for (std::vector<std::string>::const_iterator iter = searchPaths.begin(); iter != searchPaths.end(); ++iter)
@@ -724,6 +789,10 @@ void CCFileUtils::setSearchPaths(const std::vector<std::string>& searchPaths)
         //CCLOG("Default root path doesn't exist, adding it.");
         m_searchPathArray.push_back(m_strDefaultResRootPath);
     }
+//     for(int i=0;i<m_searchPathArray.size();i++)
+//     {
+//         CCLOG("[CCFileUtils::setSearchPaths] end path=(%s)", m_searchPathArray[i].c_str());
+//     }
 }
 
 void CCFileUtils::addSearchPath(const char* path_)
@@ -735,11 +804,53 @@ void CCFileUtils::addSearchPath(const char* path_)
         strPrefix = m_strDefaultResRootPath;
     }
     path = strPrefix + path;
-    if (path.length() > 0 && path[path.length()-1] != '/')
-    {
-        path += "/";
-    }
+	if (path.length() > 0)
+	{
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_WIN32)
+
+		if (path[path.length()-1] == '/')
+		{
+			path[path.length()-1] = '\\';
+		}
+
+		if (path[path.length()-1] != '\\')
+		{
+			path += "\\";
+		}
+#else
+		if (path[path.length()-1] == '\\')
+		{
+			path[path.length()-1] = '/';
+		}
+		if (path[path.length()-1] != '/')
+		{
+			path += "/";
+		}
+#endif
+	}
     m_searchPathArray.push_back(path);
+}
+
+void CCFileUtils::removeSearchPath(const char *path_)
+{
+	std::string strPrefix;
+	std::string path(path_);
+	if (!isAbsolutePath(path))
+	{ // Not an absolute path
+		strPrefix = m_strDefaultResRootPath;
+	}
+	path = strPrefix + path;
+	if (path.length() > 0 && path[path.length()-1] != '/')
+	{
+		path += "/";
+	}
+	std::vector<std::string>::iterator iter = std::find(m_searchPathArray.begin(), m_searchPathArray.end(), path);
+	m_searchPathArray.erase(iter);
+}
+
+void CCFileUtils::removeAllPaths()
+{
+	m_searchPathArray.clear();
 }
 
 void CCFileUtils::setFilenameLookupDictionary(CCDictionary* pFilenameLookupDict)

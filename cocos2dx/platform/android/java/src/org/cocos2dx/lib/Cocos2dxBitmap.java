@@ -26,6 +26,7 @@ package org.cocos2dx.lib;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.LinkedList;
+import java.io.UnsupportedEncodingException;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -83,25 +84,7 @@ public class Cocos2dxBitmap {
 	private static native void nativeInitBitmapDC(final int pWidth,
 			final int pHeight, final byte[] pPixels);
 
-	/**
-	 * @param pWidth
-	 *            the width to draw, it can be 0
-	 * @param pHeight
-	 *            the height to draw, it can be 0
-	 */
-	public static void createTextBitmap(String pString, final String pFontName,
-			final int pFontSize, final int pAlignment, final int pWidth,
-			final int pHeight) {
-		
-		//
-		createTextBitmapShadowStroke( pString, pFontName, pFontSize, 1.0f, 1.0f, 1.0f,   	// text font and color
-									  pAlignment, pWidth, pHeight,							// alignment and size
-									  false, 0.0f, 0.0f, 0.0f,								// no shadow
-									  false, 1.0f, 1.0f, 1.0f, 1.0f);						// no stroke
-									 
-	}
-
-	public static void createTextBitmapShadowStroke(String pString,  final String pFontName, final int pFontSize,
+	public static boolean createTextBitmapShadowStroke(byte[] pTextBytes,  final String pFontName, final int pFontSize,
 													final float fontTintR, final float fontTintG, final float fontTintB,
 													final int pAlignment, final int pWidth, final int pHeight, final boolean shadow,
 													final float shadowDX, final float shadowDY, final float shadowBlur, final boolean stroke,
@@ -111,8 +94,27 @@ public class Cocos2dxBitmap {
 		final int horizontalAlignment = pAlignment & 0x0F;
 		final int verticalAlignment   = (pAlignment >> 4) & 0x0F;
 
+		String pString;
+		try
+		{
+			pString = new String(pTextBytes, "UTF-8");
+		}
+		catch (UnsupportedEncodingException e)
+		{
+			Log.w("createTextBitmapShadowStroke warning:",e.toString());
+			pString = "";
+		}
 		pString = Cocos2dxBitmap.refactorString(pString);
 		final Paint paint = Cocos2dxBitmap.newPaint(pFontName, pFontSize, horizontalAlignment);
+	    if(0 != pWidth)
+		{
+			final int firstWordWidth = (int) Math.ceil(paint.measureText(pString, 0,1));
+			if ( firstWordWidth > pWidth)
+			{
+				Log.w("createTextBitmapShadowStroke warning:","the input width is less than the width of the pString's first word\n");
+				return false;
+			}
+		}
 		
 		// set the paint color
 		paint.setARGB(255, (int)(255.0 * fontTintR), (int)(255.0 * fontTintG), (int)(255.0 * fontTintB));
@@ -125,6 +127,13 @@ public class Cocos2dxBitmap {
 		float bitmapPaddingY   = 0.0f;
 		float renderTextDeltaX = 0.0f;
 		float renderTextDeltaY = 0.0f;
+		
+		
+		if (0 == textProperty.mMaxWidth || 0 == bitmapTotalHeight)
+		{
+			Log.w("createTextBitmapShadowStroke warning:","textProperty MaxWidth is 0 or bitMapTotalHeight is 0\n");
+			return false;
+		}
 		
 		if ( shadow ) {
 
@@ -189,6 +198,8 @@ public class Cocos2dxBitmap {
 		}
 		
 		Cocos2dxBitmap.initNativeObject(bitmap);
+		
+		return true;
 	}
 
 	private static Paint newPaint(final String pFontName, final int pFontSize,
@@ -253,6 +264,11 @@ public class Cocos2dxBitmap {
 				}
 			}
 		}
+        
+        if (maxContentWidth == 0)
+		{
+			maxContentWidth = 1;
+		}
 
 		return new TextProperty(maxContentWidth, h, lines);
 	}
@@ -279,16 +295,19 @@ public class Cocos2dxBitmap {
 	private static int computeY(final FontMetricsInt pFontMetricsInt,
 			final int pConstrainHeight, final int pTotalHeight,
 			final int pVerticalAlignment) {
+            
 		int y = -pFontMetricsInt.top;
+		if (y >= 18) y -= 5;
 
-		if (pConstrainHeight > pTotalHeight) {
+		if (pConstrainHeight > pTotalHeight) 
+		{
 			switch (pVerticalAlignment) {
 			case VERTICALALIGN_TOP:
 				y = -pFontMetricsInt.top;
+				if (y >= 18) y -= 5;
 				break;
 			case VERTICALALIGN_CENTER:
-				y = -pFontMetricsInt.top + (pConstrainHeight - pTotalHeight)
-						/ 2;
+				y = -pFontMetricsInt.top + (pConstrainHeight - pTotalHeight) / 2;
 				break;
 			case VERTICALALIGN_BOTTOM:
 				y = -pFontMetricsInt.top + (pConstrainHeight - pTotalHeight);
@@ -307,7 +326,8 @@ public class Cocos2dxBitmap {
 	 */
 	private static String[] splitString(final String pString,
 			final int pMaxWidth, final int pMaxHeight, final Paint pPaint) {
-		final String[] lines = pString.split("\\n");
+		final String stringTemp = pString.replaceAll("( +$)", "");
+		final String[] lines = stringTemp.split("\\n");
 		String[] ret = null;
 		final FontMetricsInt fm = pPaint.getFontMetricsInt();
 		final int heightPerLine = (int) Math.ceil(fm.bottom - fm.top);
@@ -390,7 +410,7 @@ public class Cocos2dxBitmap {
 				}
 
 				/* Remove spaces at the beginning of a new line. */
-				while (pString.charAt(i) == ' ') {
+				while (i < charLength && pString.charAt(i) == ' ') {
 					++i;
 				}
 

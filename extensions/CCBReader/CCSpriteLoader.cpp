@@ -13,7 +13,7 @@ void CCSpriteLoader::onHandlePropTypeSpriteFrame(CCNode * pNode, CCNode * pParen
         if(pCCSpriteFrame != NULL) {
             ((CCSprite *)pNode)->setDisplayFrame(pCCSpriteFrame);
         } else {
-            CCLOG("ERROR: SpriteFrame NULL");
+            CCLOG("ERROR: CCSpriteLoader::onHandlePropTypeSpriteFrame SpriteFrame NULL");
         }
     } else {
         CCNodeLoader::onHandlePropTypeSpriteFrame(pNode, pParent, pPropertyName, pCCSpriteFrame, pCCBReader);

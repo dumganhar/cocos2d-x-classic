@@ -149,6 +149,9 @@ public:
      @since v2.1
      */
     virtual std::string fullPathForFilename(const char* pszFileName);
+
+	virtual std::string getStandardFullPath(std::string path);
+	
     
     /**
      * Loads the filenameLookup dictionary from the contents of a filename.
@@ -251,7 +254,21 @@ public:
       *
       * @since v2.1
       */
-     void addSearchPath(const char* path);
+     virtual void addSearchPath(const char* path);
+
+    /**
+      * remove search path.
+      *
+      * @since v2.1
+      */
+	 virtual void removeSearchPath(const char *path);
+
+    /**
+      * remove all paths.
+      *
+      * @since v2.1
+      */
+	 void removeAllPaths();
     
     /**
      *  Gets the array of search paths.

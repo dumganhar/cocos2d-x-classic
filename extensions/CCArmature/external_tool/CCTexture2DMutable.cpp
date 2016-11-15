@@ -82,27 +82,18 @@ bool CCTexture2DMutable::initWithImageFile(const char *imageFile)
 
 bool CCTexture2DMutable::initWithData(const void* data, CCTexture2DPixelFormat pixelFormat, unsigned int width, unsigned int height, const CCSize& size)
 {
-	if(!CCTexture2D::initWithData(data, pixelFormat, width, height, size)) {
+    bitsPerPixel_ = bitsPerPixelInDataForFormat(pixelFormat);
+    unsigned int dataLen = width * height * bitsPerPixel_ / 8;
+
+	if(!CCTexture2D::initWithData(data, dataLen, pixelFormat, width, height, size)) {
         return false;
     }
-        
-    switch (pixelFormat) {
-        case kTexture2DPixelFormat_RGBA8888:	bytesPerPixel_ = 4; break;
-        case kTexture2DPixelFormat_A8:			bytesPerPixel_ = 1; break;
-        case kTexture2DPixelFormat_RGBA4444:
-        case kTexture2DPixelFormat_RGB565:
-        case kTexture2DPixelFormat_RGB5A1:
-            bytesPerPixel_ = 2;
-            break;
-        default:break;
-    }
-    
+
     data_ = (void*) data;
     
 #if CC_MUTABLE_TEXTURE_SAVE_ORIGINAL_DATA
-    unsigned int max = width * height * bytesPerPixel_;
-    originalData_ = malloc(max);
-    memcpy(originalData_, data_, max);
+    originalData_ = malloc(dataLen);
+    memcpy(originalData_, data_, dataLen);
 #endif
 
     return true;
@@ -118,7 +109,7 @@ ccColor4B CCTexture2DMutable::pixelAt(const CCPoint& pt)
     
     //! modified, texture origin point is left top, cocos2d origin point is left bottom
     //! unsigned int x = pt.x, y = pt.y
-	unsigned int x = pt.x, y = m_uPixelsHigh - pt.y;
+	unsigned int x = pt.x, y = m_uPixelsHigh - 1 - pt.y;
     
 	if(m_ePixelFormat == kTexture2DPixelFormat_RGBA8888){
 		unsigned int *pixel = (unsigned int *)data_;
@@ -209,20 +200,20 @@ void CCTexture2DMutable::fill(ccColor4B p)
 CCTexture2D* CCTexture2DMutable::copyMutable(bool isMutable )
 {	
 	CCTexture2D* co;
+    unsigned int mem = m_uPixelsWide*m_uPixelsHigh*bitsPerPixel_/8;
 	if(isMutable)
 	{
-		int mem = m_uPixelsWide*m_uPixelsHigh*bytesPerPixel_;
 		void *newData = malloc(mem);
 		memcpy(newData, data_, mem);
         co = new CCTexture2DMutable();
-        if (!co->initWithData(newData, m_ePixelFormat, m_uPixelsWide, m_uPixelsHigh, m_tContentSize)) {
+        if (!co->initWithData(newData, mem, m_ePixelFormat, m_uPixelsWide, m_uPixelsHigh, m_tContentSize)) {
             delete co;
             co = NULL;
         }
 	}else {
         
         co = new CCTexture2D();
-        if (!co->initWithData(data_, m_ePixelFormat, m_uPixelsWide, m_uPixelsHigh, m_tContentSize)) {
+        if (!co->initWithData(data_, mem, m_ePixelFormat, m_uPixelsWide, m_uPixelsHigh, m_tContentSize)) {
             delete co;
             co = NULL;
         }
@@ -248,7 +239,7 @@ void CCTexture2DMutable::copy(CCTexture2DMutable* textureToCopy, const CCPoint& 
 void CCTexture2DMutable::restore()
 {
 #if CC_MUTABLE_TEXTURE_SAVE_ORIGINAL_DATA
-	memcpy(data_, originalData_, bytesPerPixel_*m_uPixelsWide*m_uPixelsHigh);
+	memcpy(data_, originalData_, m_uPixelsWide*m_uPixelsHigh*bitsPerPixel_/8);
 	this->apply();
 #else
 	//You should set CC_MUTABLE_TEXTURE_SAVE_ORIGINAL_DATA 1 in CCTexture2DMutable.h
@@ -301,9 +292,15 @@ CCTexture2DMutable::~CCTexture2DMutable(void)
 {
 	CCLOGINFO("cocos2d: deallocing %p", this);
     
-    CC_SAFE_DELETE(image_);
+	if (image_)
+	{
+		CC_SAFE_DELETE(image_);
+	}
+	else
+	{
+		free(data_);
+	}
     
-	free(data_);
 #if CC_MUTABLE_TEXTURE_SAVE_ORIGINAL_DATA
 	free(originalData_);
 #endif

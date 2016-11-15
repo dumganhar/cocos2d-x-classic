@@ -26,6 +26,12 @@ extern "C"
     extern void resumeEffectJNI(unsigned int nSoundId);
     extern void resumeAllEffectsJNI();
     extern void stopAllEffectsJNI();
+
+	///////////////////////////////////////
+	// vibrate
+	extern void vibrateJNI(long time);
+	extern void vibrateWithPatternJNI(long pattern[], int repeat);
+	extern void cancelVibrateJNI();
 }
 
 #endif // __SIMPLE_AUDIO_ENGINE_JNI__

@@ -65,6 +65,26 @@ using namespace std;
 
 NS_CC_BEGIN
 
+/*
+ *	test
+ */
+class CCParticleSystemStatistics 
+{
+public:
+	void add(CCParticleSystem* pParticle)
+	{
+		m_setParticle.insert(pParticle);
+	}
+	void remove(CCParticleSystem* pParticle)
+	{
+		m_setParticle.erase(pParticle);
+	}
+private:
+	std::set<CCParticleSystem*> m_setParticle;
+};
+
+static CCParticleSystemStatistics g_particleSystemStatistics;
+
 // ideas taken from:
 //     . The ocean spray in your face [Jeff Lander]
 //        http://www.double.co.nz/dust/col0798.pdf
@@ -120,6 +140,7 @@ CCParticleSystem::CCParticleSystem()
 , m_ePositionType(kCCPositionTypeFree)
 , m_bIsAutoRemoveOnFinish(false)
 , m_nEmitterMode(kCCParticleModeGravity)
+, m_fOpacityScale(1.0f)
 {
     modeA.gravity = CCPointZero;
     modeA.speed = 0;
@@ -137,6 +158,13 @@ CCParticleSystem::CCParticleSystem()
     modeB.rotatePerSecondVar = 0;
     m_tBlendFunc.src = CC_BLEND_SRC;
     m_tBlendFunc.dst = CC_BLEND_DST;
+
+	/////////////////////////////////
+	// add by camelliu
+	m_nTag = 100;
+	/////////////////////////////////
+
+	g_particleSystemStatistics.add(this);
 }
 // implementation CCParticleSystem
 
@@ -453,6 +481,8 @@ CCParticleSystem::~CCParticleSystem()
     //unscheduleUpdate();
     CC_SAFE_FREE(m_pParticles);
     CC_SAFE_RELEASE(m_pTexture);
+
+	g_particleSystemStatistics.remove(this);
 }
 
 bool CCParticleSystem::addParticle()
@@ -622,8 +652,13 @@ void CCParticleSystem::onExit()
 // ParticleSystem - MainLoop
 void CCParticleSystem::update(float dt)
 {
+	CC_PROFILER_HELPER;
     CC_PROFILER_START_CATEGORY(kCCProfilerCategoryParticles , "CCParticleSystem - update");
-
+	if (!m_bVisible)
+	{
+		return;
+	}
+	
     if (m_bIsActive && m_fEmissionRate)
     {
         float rate = 1.0f / m_fEmissionRate;
@@ -746,8 +781,28 @@ void CCParticleSystem::update(float dt)
                     newPos.y+=m_obPosition.y;
                 }
 
+				//设置透明度
+				ccColor4F origColor4F = p->color;
+				if(m_fOpacityScale < 1.0f)
+				{
+					p->color.r *= m_fOpacityScale;
+					p->color.g *= m_fOpacityScale;
+					p->color.b *= m_fOpacityScale;
+					p->color.a *= m_fOpacityScale;
+				}
+				//float fOpacity = p->color.a;
+				//if(m_fOpacityScale < 1.0f)
+				//{
+				//	p->color.a *= m_fOpacityScale;
+				//}
                 updateQuadWithParticle(p, newPos);
                 //updateParticleImp(self, updateParticleSel, p, newPos);
+				//还原初始透明度
+				if(m_fOpacityScale < 1.0f)
+				{
+					//p->color.a = fOpacity;
+					p->color = origColor4F;
+				}
 
                 // update particle counter
                 ++m_uParticleIdx;
@@ -793,6 +848,28 @@ void CCParticleSystem::update(float dt)
 void CCParticleSystem::updateWithNoTime(void)
 {
     this->update(0.0f);
+}
+
+tCCParticle* CCParticleSystem::getParticleByIndex(int iIndex)
+{
+	if (iIndex >= 0 && iIndex < (int)m_uParticleCount)
+	{
+		tCCParticle *p = &m_pParticles[iIndex];
+
+		return p;
+	}
+
+	return NULL;
+}
+
+void CCParticleSystem::destroyParticleByIndex(int iIndex)
+{
+	if (iIndex >= 0 && iIndex < (int)m_uParticleCount)
+	{
+		tCCParticle *p = &m_pParticles[iIndex];
+
+		p->timeToLive = 0;
+	}
 }
 
 void CCParticleSystem::updateQuadWithParticle(tCCParticle* particle, const CCPoint& newPosition)

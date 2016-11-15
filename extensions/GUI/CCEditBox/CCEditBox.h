@@ -137,21 +137,21 @@ public:
      * This method is called when an edit box gains focus after keyboard is shown.
      * @param editBox The edit box object that generated the event.
      */
-    virtual void editBoxEditingDidBegin(CCEditBox* editBox) {};
+    virtual void editBoxEditingDidBegin(CCEditBox* /*editBox*/) {};
     
     
     /**
      * This method is called when an edit box loses focus after keyboard is hidden.
      * @param editBox The edit box object that generated the event.
      */
-    virtual void editBoxEditingDidEnd(CCEditBox* editBox) {};
+    virtual void editBoxEditingDidEnd(CCEditBox* /*editBox*/) {};
     
     /**
      * This method is called when the edit box text was changed.
      * @param editBox The edit box object that generated the event.
      * @param text The new text.
      */
-    virtual void editBoxTextChanged(CCEditBox* editBox, const std::string& text) {};
+    virtual void editBoxTextChanged(CCEditBox* /*editBox*/, const std::string& /*text*/) {};
     
     /**
      * This method is called when the return button was pressed or the outside area of keyboard was touched.

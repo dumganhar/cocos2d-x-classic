@@ -177,8 +177,8 @@ void CCTileMapAtlas::updateAtlasValueAt(const CCPoint& pos, const ccColor3B& val
 
     ccV3F_C4B_T2F_Quad* quad = &((m_pTextureAtlas->getQuads())[index]);
 
-    int x = pos.x;
-    int y = pos.y;
+    int x = (int)pos.x;
+    int y = (int)pos.y;
     float row = (float) (value.r % m_uItemsPerRow);
     float col = (float) (value.r / m_uItemsPerRow);
 

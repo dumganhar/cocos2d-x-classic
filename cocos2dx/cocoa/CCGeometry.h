@@ -54,6 +54,7 @@ public:
     CCPoint& operator= (const CCSize& size);
     CCPoint operator+(const CCPoint& right) const;
     CCPoint operator-(const CCPoint& right) const;
+	bool operator!=(const CCPoint& right);
     CCPoint operator-() const;
     CCPoint operator*(float a) const;
     CCPoint operator/(float a) const;

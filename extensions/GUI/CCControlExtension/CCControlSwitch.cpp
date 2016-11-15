@@ -155,6 +155,7 @@ void CCControlSwitchSprite::updateTweenAction(float value, const char* key)
 
 void CCControlSwitchSprite::draw()
 {
+	CCDirector::sharedDirector()->flushDraw();
     CC_NODE_DRAW_SETUP();
 
     ccGLEnableVertexAttribs(kCCVertexAttribFlag_PosColorTex);

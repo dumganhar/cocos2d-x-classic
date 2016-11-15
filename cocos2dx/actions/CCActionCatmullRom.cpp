@@ -185,14 +185,14 @@ void CCPointArray::reverseInline()
         p1 = m_pControlPoints->at(i);
         p2 = m_pControlPoints->at(l-i-1);
         
-        x = p1->x;
-        y = p1->y;
+        x = (int)p1->x;
+        y = (int)p1->y;
         
         p1->x = p2->x;
         p1->y = p2->y;
         
-        p2->x = x;
-        p2->y = y;
+        p2->x = (float)x;
+        p2->y = (float)y;
     }
 }
 
@@ -317,7 +317,7 @@ void CCCardinalSplineTo::update(float time)
     }
     else 
     {
-        p = time / m_fDeltaT;
+        p = (unsigned int)(time / m_fDeltaT);
         lt = (time - m_fDeltaT * (float)p) / m_fDeltaT;
     }
     

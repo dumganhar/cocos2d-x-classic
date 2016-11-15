@@ -28,6 +28,7 @@ THE SOFTWARE.
 #include <string>
 
 // cocos2d includes
+#include "base_nodes/CCBatchNodeMgr.h"
 #include "CCDirector.h"
 #include "ccFPSImages.h"
 #include "draw_nodes/CCDrawingPrimitives.h"
@@ -64,6 +65,7 @@ THE SOFTWARE.
 #include "platform/CCImage.h"
 #include "CCEGLView.h"
 #include "CCConfiguration.h"
+#include <pthread.h>
 
 #if CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID
 #include "platform/android/jni/Java_org_cocos2dx_lib_Cocos2dxEngineDataManager.h"
@@ -82,6 +84,7 @@ using namespace std;
 
 unsigned int g_uNumberOfDraws = 0;
 unsigned int g_uNumberOfVertex = 0;
+pthread_t g_mainThread;
 
 NS_CC_BEGIN
 // XXX it should be a Director ivar. Move it there once support for multiple directors is added
@@ -105,11 +108,20 @@ CCDirector* CCDirector::sharedDirector(void)
 
 CCDirector::CCDirector(void)
 {
+    m_pBrowserEventListener = 0;
+	m_bEnableThreadMutual = false;
 
+	m_bAutoBatch = false;
+
+	m_bPrintCurFrameCostTime = false;
+	m_bOpenTest = false;
+
+	m_9SpriteNoBatchNode = false;
 }
 
 bool CCDirector::init(void)
 {
+    
 	setDefaultValues();
 
     m_hookBeforeSetNextScene = NULL;
@@ -134,13 +146,29 @@ bool CCDirector::init(void)
     m_pFPSLabel = NULL;
     m_pSPFLabel = NULL;
     m_pDrawsLabel = NULL;
+	m_pDelayLabel = NULL;
+	m_pUdpServerDelayLabel = NULL;
+	m_pBulletNumLabel = NULL;
+	m_pEnemyNumLabel = NULL;
+	m_nNetTcpDelay = 0;
+	m_nNetUdpDelay = 0;
+	m_nUdpServerLostRate = 0;
+	m_nUdpServerAvgDelay = 0;
+	m_nUdpServerRealTimeDelay = 0;
+	m_nMainBulletNum = 0;
+	m_nEnemyBulletNum = 0;
+	m_nEnemyNum = 0;
+
     m_uTotalFrames = m_uFrames = 0;
-    m_pszFPS = new char[10];
+    m_pszFPS = new char[100];
     m_pLastUpdate = new struct cc_timeval();
-    CCTime::gettimeofdayCocos2d(m_pLastUpdate, NULL);
 
     // paused ?
-    m_bPaused = false;
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_WIN32 || CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
+	m_bPaused = false;
+#else
+	m_bPaused = true;
+#endif
    
     // purge ?
     m_bPurgeDirecotorInNextLoop = false;
@@ -156,6 +184,13 @@ bool CCDirector::init(void)
     // action manager
     m_pActionManager = new CCActionManager();
     m_pScheduler->scheduleUpdateForTarget(m_pActionManager, kCCPrioritySystem, false);
+
+	// scheduler
+	m_pSceneSlowScheduler = new CCScheduler();
+	// action manager
+	m_pSceneSlowActionManager = new CCActionManager();
+	m_pSceneSlowScheduler->scheduleUpdateForTarget(m_pSceneSlowActionManager, kCCPrioritySystem, false);
+
     // touchDispatcher
     m_pTouchDispatcher = new CCTouchDispatcher();
     m_pTouchDispatcher->init();
@@ -165,7 +200,7 @@ bool CCDirector::init(void)
 
     // Accelerometer
     m_pAccelerometer = new CCAccelerometer();
-
+	m_fSecondsPerFrame = 0.0f;
     // create autorelease pool
     CCPoolManager::sharedPoolManager()->push();
 
@@ -175,20 +210,56 @@ bool CCDirector::init(void)
 
     return true;
 }
+
+#if CC_TARGET_PLATFORM == CC_PLATFORM_WIN32
+void CCDirector::addDrawTextureIDToVec(GLuint textureID)
+{
+	if(m_bTextureDrawInfo)
+	{
+		m_listDrawTexture.push_back(textureID);
+
+		std::map<GLuint, std::string>::iterator iter = m_mapTextureFile.find(textureID);
+		if(iter != m_mapTextureFile.end())
+		{
+			CCLog("xxxxxxxxxxx TextureInfo addDrawTextureIDToVec = %s", iter->second.c_str());
+		}
+	}
+}
+
+void CCDirector::putTextureIDFileMap(std::string &fileName, GLuint textureID)
+{ 
+	m_mapTextureFile[textureID] = fileName; 
+}
+
+void CCDirector::removeTextureIDFromMap(GLuint textureID)
+{
+	std::map<GLuint, std::string>::iterator iter = m_mapTextureFile.find(textureID);
+	if(iter != m_mapTextureFile.end())
+	{
+		m_mapTextureFile.erase(iter);
+	}
+}
+#endif
     
 CCDirector::~CCDirector(void)
 {
-    CCLOG("cocos2d: deallocing CCDirector %p", this);
+    CCLog("cocos2d: deallocing CCDirector %p", this);
 
     CC_SAFE_RELEASE(m_pFPSLabel);
     CC_SAFE_RELEASE(m_pSPFLabel);
     CC_SAFE_RELEASE(m_pDrawsLabel);
+	CC_SAFE_RELEASE(m_pDelayLabel);
+	CC_SAFE_RELEASE(m_pUdpServerDelayLabel);
+	CC_SAFE_RELEASE(m_pBulletNumLabel);
+	CC_SAFE_RELEASE(m_pEnemyNumLabel);
     
     CC_SAFE_RELEASE(m_pRunningScene);
     CC_SAFE_RELEASE(m_pNotificationNode);
     CC_SAFE_RELEASE(m_pobScenesStack);
     CC_SAFE_RELEASE(m_pScheduler);
-    CC_SAFE_RELEASE(m_pActionManager);
+	CC_SAFE_RELEASE(m_pActionManager);
+	CC_SAFE_RELEASE(m_pSceneSlowScheduler);
+    CC_SAFE_RELEASE(m_pSceneSlowActionManager);
     CC_SAFE_RELEASE(m_pTouchDispatcher);
     CC_SAFE_RELEASE(m_pKeypadDispatcher);
     CC_SAFE_DELETE(m_pAccelerometer);
@@ -200,7 +271,7 @@ CCDirector::~CCDirector(void)
     // delete m_pLastUpdate
     CC_SAFE_DELETE(m_pLastUpdate);
     // delete fps string
-    delete []m_pszFPS;
+    CC_SAFE_DELETE_ARRAY(m_pszFPS);
 
     s_SharedDirector = NULL;
 }
@@ -217,7 +288,7 @@ void CCDirector::setDefaultValues(void)
 	m_bDisplayStats = conf->getBool("cocos2d.x.display_fps", false);
 
 	// GL projection
-	const char *projection = conf->getCString("cocos2d.x.gl.projection", "3d");
+	const char *projection = conf->getCString("cocos2d.x.gl.projection", "2d");
 	if( strcmp(projection, "3d") == 0 )
 		m_eProjection = kCCDirectorProjection3D;
 	else if (strcmp(projection, "2d") == 0)
@@ -239,6 +310,9 @@ void CCDirector::setDefaultValues(void)
 	// PVR v2 has alpha premultiplied ?
 	bool pvr_alpha_premultipled = conf->getBool("cocos2d.x.texture.pvrv2_has_alpha_premultiplied", false);
 	CCTexture2D::PVRImagesHavePremultipliedAlpha(pvr_alpha_premultipled);
+
+	// Always use premultiplied for PVR v2
+	CCTexture2D::PVRImagesHavePremultipliedAlpha(true);
 }
 
 void CCDirector::setGLDefaultValues(void)
@@ -258,15 +332,56 @@ void CCDirector::setGLDefaultValues(void)
 
 // Draw the Scene
 void CCDirector::drawScene(void)
+{	
+	CC_PROFILER_HELPER;
+	// calculate "global" dt
+	calculateDeltaTime();
+	drawSceneImpl();	
+}
+
+void CCDirector::drawSceneForAddFrame( float delta )
 {
     // calculate "global" dt
-    calculateDeltaTime();
+    //calculateDeltaTime();
+	m_fDeltaTime = delta;
 
+	drawSceneImpl();
+}
+
+void CCDirector::drawSceneImpl(void)
+{
+	CC_PROFILER_HELPER;
+	if (m_bEnableThreadMutual)
+	{
+		if (!isInMainThread())
+		{
+			return;
+		}
+	}	
+
+	////////////////////////////////////////////////////////////////
+	// add by camel
+	//CCProfiler::sharedProfiler()->beginTimingBlock("CCDirector::drawSceneImpl beforeDrawScene");
+	for(unsigned int i = 0; i < m_vecDrawSceneListener.size(); i++)
+	{
+		CCDrawSceneListener* pListener = m_vecDrawSceneListener[i];
+		if(pListener)
+		{
+			pListener->beforeDrawScene(m_fDeltaTime);
+		}
+	}
+	//CCProfiler::sharedProfiler()->endTimingBlock("CCDirector::drawSceneImpl beforeDrawScene");
+	////////////////////////////////////////////////////////////////
+
+	CCProfiler::sharedProfiler()->beginTimingBlock("SchedulerUpdate");
     //tick before glClear: issue #533
     if (! m_bPaused)
     {
         m_pScheduler->update(m_fDeltaTime);
+		m_pSceneSlowScheduler->update(m_fDeltaTime);
     }
+
+	CCProfiler::sharedProfiler()->endTimingBlock("SchedulerUpdate");
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -279,6 +394,7 @@ void CCDirector::drawScene(void)
 
     kmGLPushMatrix();
 
+	CCProfiler::sharedProfiler()->beginTimingBlock("SceneVisit");
     // draw the scene
     if (m_pRunningScene)
     {
@@ -286,19 +402,21 @@ void CCDirector::drawScene(void)
         g_uNumberOfDraws = g_uNumberOfVertex = 0;
         m_pRunningScene->visit();
     }
+	CCProfiler::sharedProfiler()->endTimingBlock("SceneVisit");
 
     // draw the notifications node
     if (m_pNotificationNode)
     {
         m_pNotificationNode->visit();
     }
+
+	flushDraw();
     
     updateFrameRate();
-
-    if (m_bDisplayStats)
-    {
+//    if (m_bDisplayStats)
+//    {
         showStats();
-    }
+//    }
 
     kmGLPopMatrix();
 
@@ -308,17 +426,53 @@ void CCDirector::drawScene(void)
     {
         m_hookAfterDraw();
     }
-
+    
+	CCProfiler::sharedProfiler()->beginTimingBlock("SwapBuffers");
     // swap buffers
     if (m_pobOpenGLView)
     {
         m_pobOpenGLView->swapBuffers();
     }
-    
-    if (m_bDisplayStats)
-    {
+    CCProfiler::sharedProfiler()->endTimingBlock("SwapBuffers");
+//    if (m_bDisplayStats)
+//    {
         calculateMPF();
-    }
+//    }
+
+	////////////////////////////////////////////////////////////////
+	// add by camel
+	//CCProfiler::sharedProfiler()->beginTimingBlock("CCDirector::drawSceneImpl afterDrawScene");
+	for(unsigned int i = 0; i < m_vecDrawSceneListener.size(); i++)
+	{
+		CCDrawSceneListener* pListener = m_vecDrawSceneListener[i];
+		if(pListener)
+		{
+			pListener->afterDrawScene(m_fDeltaTime);
+		}
+	}
+	//CCProfiler::sharedProfiler()->endTimingBlock("CCDirector::drawSceneImpl afterDrawScene");
+	////////////////////////////////////////////////////////////////
+#if CC_TARGET_PLATFORM == CC_PLATFORM_WIN32
+	if(m_bTextureDrawInfo)
+	{
+		CCLog("xxxxxxxxxxx start xxxxxxxxxxx");
+		CCLog("xxxxxxxxxxxTextureInfo size = %d", m_listDrawTexture.size());
+
+		list<GLuint>::iterator iter = m_listDrawTexture.begin();
+		for (; iter != m_listDrawTexture.end(); iter++)
+		{
+			GLuint textureID = *iter;
+			std::map<GLuint, std::string>::iterator iter = m_mapTextureFile.find(textureID);
+			if(iter != m_mapTextureFile.end())
+			{
+				CCLog("xxxxxxxxxxx TextureInfo seq = %s", iter->second.c_str());
+			}
+		}
+		CCLog("xxxxxxxxxxx end xxxxxxxxxxx");
+		m_listDrawTexture.clear();
+	}
+	
+#endif
 }
 
 void CCDirector::calculateDeltaTime(void)
@@ -361,7 +515,7 @@ float CCDirector::getDeltaTime()
 void CCDirector::setOpenGLView(CCEGLView *pobOpenGLView)
 {
     CCAssert(pobOpenGLView, "opengl view should not be null");
-
+	CCLog("CCDirector::setOpenGLView");
     if (m_pobOpenGLView != pobOpenGLView)
     {
 		// Configuration. Gather GPU info
@@ -392,6 +546,8 @@ void CCDirector::setOpenGLView(CCEGLView *pobOpenGLView)
 
 void CCDirector::setViewport()
 {
+	CCAssert(metis::CCBatchNodeMgr::GetInstance()->Empty(), "AutoBatch must be empty beforn change viewport!");
+
     if (m_pobOpenGLView)
     {
         m_pobOpenGLView->setViewPortInPoints(0, 0, m_obWinSizeInPoints.width, m_obWinSizeInPoints.height);
@@ -405,6 +561,8 @@ void CCDirector::setNextDeltaTimeZero(bool bNextDeltaTimeZero)
 
 void CCDirector::setProjection(ccDirectorProjection kProjection)
 {
+	CCAssert(metis::CCBatchNodeMgr::GetInstance()->Empty(), "AutoBatch must be empty beforn change Projection!");
+
     CCSize size = m_obWinSizeInPoints;
 
     setViewport();
@@ -492,6 +650,18 @@ void CCDirector::setAlphaBlending(bool bOn)
     }
 
     CHECK_GL_ERROR_DEBUG();
+}
+
+void CCDirector::reshapeProjection(const CCSize& newWindowSize)
+{
+	CC_UNUSED_PARAM(newWindowSize);
+	if (m_pobOpenGLView)
+	{
+		m_obWinSizeInPoints = CCSizeMake(newWindowSize.width * m_fContentScaleFactor,
+			newWindowSize.height * m_fContentScaleFactor);
+		setProjection(m_eProjection);       
+	}
+
 }
 
 void CCDirector::setDepthTest(bool bOn)
@@ -690,6 +860,7 @@ void CCDirector::end()
 
 void CCDirector::purgeDirector()
 {
+	CCLog("CCDirector::purgeDirector");
     // cleanup scheduler
     getScheduler()->unscheduleAll();
     
@@ -712,11 +883,14 @@ void CCDirector::purgeDirector()
     // runWithScene might be executed after 'end'.
     m_pobScenesStack->removeAllObjects();
 
+	stopRender();
     stopAnimation();
 
     CC_SAFE_RELEASE_NULL(m_pFPSLabel);
     CC_SAFE_RELEASE_NULL(m_pSPFLabel);
     CC_SAFE_RELEASE_NULL(m_pDrawsLabel);
+	CC_SAFE_RELEASE_NULL(m_pDelayLabel);
+	CC_SAFE_RELEASE_NULL(m_pUdpServerDelayLabel);
 
     // purge bitmap cache
     CCLabelBMFont::purgeCachedData();
@@ -864,7 +1038,44 @@ void CCDirector::showStats(void)
             m_pFPSLabel->visit();
             m_pSPFLabel->visit();
         }
+
+        if (m_pDelayLabel && m_pUdpServerDelayLabel && m_pBulletNumLabel && m_pEnemyNumLabel)
+        {
+			int nNetTcpDelay = m_nNetTcpDelay;
+			if (nNetTcpDelay > 100000)
+			{
+				nNetTcpDelay = 99999;
+			}
+			
+			int nNetUdpDelay = m_nNetUdpDelay;
+			if (nNetUdpDelay > 100000)
+			{
+				nNetUdpDelay = 99999;
+			}
+
+			sprintf(m_pszFPS, "%d %d", nNetTcpDelay, nNetUdpDelay);
+			m_pDelayLabel->setString(m_pszFPS);
+
+			sprintf(m_pszFPS, "%d %d %d", m_nUdpServerLostRate, m_nUdpServerAvgDelay, m_nUdpServerRealTimeDelay);
+			m_pUdpServerDelayLabel->setString(m_pszFPS);
+
+			sprintf(m_pszFPS, "%d %d", m_nMainBulletNum, m_nEnemyBulletNum);
+			m_pBulletNumLabel->setString(m_pszFPS);
+
+			sprintf(m_pszFPS, "%d", m_nEnemyNum);
+			m_pEnemyNumLabel->setString(m_pszFPS);
+			
+			m_pBulletNumLabel->visit();
+			m_pEnemyNumLabel->visit();
+            m_pUdpServerDelayLabel->visit();
+			m_pDelayLabel->visit();
+        }
     }    
+}
+
+float CCDirector::getFPS()
+{
+    return m_fFrameRate;
 }
 
 void CCDirector::calculateMPF()
@@ -893,6 +1104,10 @@ void CCDirector::createStatsLabel()
         CC_SAFE_RELEASE_NULL(m_pFPSLabel);
         CC_SAFE_RELEASE_NULL(m_pSPFLabel);
         CC_SAFE_RELEASE_NULL(m_pDrawsLabel);
+		CC_SAFE_RELEASE_NULL(m_pDelayLabel);
+		CC_SAFE_RELEASE_NULL(m_pUdpServerDelayLabel);
+		CC_SAFE_RELEASE_NULL(m_pBulletNumLabel);
+		CC_SAFE_RELEASE_NULL(m_pEnemyNumLabel);
         textureCache->removeTextureForKey("cc_fps_images");
         CCFileUtils::sharedFileUtils()->purgeCachedEntries();
     }
@@ -943,8 +1158,32 @@ void CCDirector::createStatsLabel()
     m_pDrawsLabel->initWithString("000", texture, 12, 32, '.');
     m_pDrawsLabel->setScale(factor);
 
+	m_pDelayLabel = new CCLabelAtlas();
+	m_pDelayLabel->setIgnoreContentScaleFactor(true);
+	m_pDelayLabel->initWithString("000", texture, 12, 32, '.');
+	m_pDelayLabel->setScale(factor);
+
+	m_pUdpServerDelayLabel = new CCLabelAtlas();
+	m_pUdpServerDelayLabel->setIgnoreContentScaleFactor(true);
+	m_pUdpServerDelayLabel->initWithString("000", texture, 12, 32, '.');
+	m_pUdpServerDelayLabel->setScale(factor);
+
+	m_pBulletNumLabel = new CCLabelAtlas();
+	m_pBulletNumLabel->setIgnoreContentScaleFactor(true);
+	m_pBulletNumLabel->initWithString("000", texture, 12, 32, '.');
+	m_pBulletNumLabel->setScale(factor);
+
+	m_pEnemyNumLabel = new CCLabelAtlas();
+	m_pEnemyNumLabel->setIgnoreContentScaleFactor(true);
+	m_pEnemyNumLabel->initWithString("000", texture, 12, 32, '.');
+	m_pEnemyNumLabel->setScale(factor);
+
     CCTexture2D::setDefaultAlphaPixelFormat(currentFormat);
 
+	m_pEnemyNumLabel->setPosition(ccpAdd(ccp(0, 101*factor), CC_DIRECTOR_STATS_POSITION));
+	m_pBulletNumLabel->setPosition(ccpAdd(ccp(0, 85*factor), CC_DIRECTOR_STATS_POSITION));
+	m_pUdpServerDelayLabel->setPosition(ccpAdd(ccp(0, 68*factor), CC_DIRECTOR_STATS_POSITION));
+	m_pDelayLabel->setPosition(ccpAdd(ccp(0, 51*factor), CC_DIRECTOR_STATS_POSITION));
     m_pDrawsLabel->setPosition(ccpAdd(ccp(0, 34*factor), CC_DIRECTOR_STATS_POSITION));
     m_pSPFLabel->setPosition(ccpAdd(ccp(0, 17*factor), CC_DIRECTOR_STATS_POSITION));
     m_pFPSLabel->setPosition(CC_DIRECTOR_STATS_POSITION);
@@ -1001,6 +1240,22 @@ CCScheduler* CCDirector::getScheduler()
     return m_pScheduler;
 }
 
+
+void CCDirector::setSlowScheduler(CCScheduler* pScheduler)
+{
+	if (m_pSceneSlowScheduler != pScheduler)
+	{
+		CC_SAFE_RETAIN(pScheduler);
+		CC_SAFE_RELEASE(m_pSceneSlowScheduler);
+		m_pSceneSlowScheduler = pScheduler;
+	}
+}
+
+CCScheduler* CCDirector::getSlowScheduler()
+{
+	return m_pSceneSlowScheduler;
+}
+
 void CCDirector::setActionManager(CCActionManager* pActionManager)
 {
     if (m_pActionManager != pActionManager)
@@ -1014,6 +1269,22 @@ void CCDirector::setActionManager(CCActionManager* pActionManager)
 CCActionManager* CCDirector::getActionManager()
 {
     return m_pActionManager;
+}
+
+
+void CCDirector::setSlowActionManager(CCActionManager* pActionManager)
+{
+	if (m_pSceneSlowActionManager != pActionManager)
+	{
+		CC_SAFE_RETAIN(pActionManager);
+		CC_SAFE_RELEASE(m_pSceneSlowActionManager);
+		m_pSceneSlowActionManager = pActionManager;
+	}    
+}
+
+CCActionManager* CCDirector::getSlowActionManager()
+{
+	return m_pSceneSlowActionManager;
 }
 
 void CCDirector::setTouchDispatcher(CCTouchDispatcher* pTouchDispatcher)
@@ -1057,9 +1328,113 @@ CCAccelerometer* CCDirector::getAccelerometer()
     return m_pAccelerometer;
 }
 
+//////////////////////////////////////////////////////////////////////
+// add by camel
+
+void CCDirector::registerDrawSceneListener(CCDrawSceneListener* pListener)
+{
+	VECCCDRAWSCENELISTENER::iterator it = m_vecDrawSceneListener.begin();
+	for( ; it != m_vecDrawSceneListener.end(); it++)
+	{
+		if(*it == pListener)
+		{
+			return;
+		}
+	}
+
+	m_vecDrawSceneListener.push_back(pListener);
+}
+
+void CCDirector::unregisterDrawSceneListener(CCDrawSceneListener* pListener)
+{
+	VECCCDRAWSCENELISTENER::iterator it = m_vecDrawSceneListener.begin();
+	for( ; it != m_vecDrawSceneListener.end(); it++)
+	{
+		if(*it == pListener)
+		{
+			m_vecDrawSceneListener.erase(it);
+			return;
+		}
+	}
+}
+//////////////////////////////////////////////////////////////////////
+
+int CCDirector::fireeEvent_BrowserWillOpen(const char * url)
+{
+    if(m_pBrowserEventListener)
+    {
+        return m_pBrowserEventListener->onEvent_willOpen(url);
+    }
+    
+    return 0;
+}
+
+int CCDirector::fireBrowserEventMessage(int nMsgID, const char * pMessage)
+{
+	if(m_pBrowserEventListener)
+	{
+		return m_pBrowserEventListener->onEvent_BrowserMessage(nMsgID, pMessage);
+	}
+	return 0;
+}
+
+void CCDirector::registerBrowserEventListener(CCBrowserEventListener * listener)
+{
+    m_pBrowserEventListener = listener;
+}
+
+void CCDirector::enableThreadMutual(bool bEnable)
+{
+	m_bEnableThreadMutual = bEnable;
+	g_mainThread = pthread_self();
+}
+
+bool CCDirector::isInMainThread()
+{
+	if (m_bEnableThreadMutual)
+	{
+		pthread_t thread = pthread_self();
+		if (pthread_equal(thread, g_mainThread) == 0)
+		{
+			return false;
+		}		
+		else
+		{
+			return true;
+		}
+	}
+	return true;
+}
+
 /***************************************************
 * implementation of DisplayLinkDirector
 **************************************************/
+
+CCDisplayLinkDirector::CCDisplayLinkDirector(void)
+{
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_WIN32 || CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
+	startRender();
+	m_bIsAnimationPlaying = true;
+#else
+	stopRender();
+	m_bIsAnimationPlaying = false;
+#endif
+}
+
+void CCDisplayLinkDirector::startRender(void)
+{
+	m_bIsRendering = true;
+}
+
+void CCDisplayLinkDirector::stopRender(void)
+{
+	m_bIsRendering = false;
+}
+
+bool CCDisplayLinkDirector::isRendering(void) const
+{
+	return m_bIsRendering;
+}
 
 // should we implement 4 types of director ??
 // I think DisplayLinkDirector is enough
@@ -1071,37 +1446,132 @@ void CCDisplayLinkDirector::startAnimation(void)
         CCLOG("cocos2d: DisplayLinkDirector: Error on gettimeofday");
     }
 
-    m_bInvalid = false;
+	m_bIsAnimationPlaying = true;
 #ifndef EMSCRIPTEN
-    CCApplication::sharedApplication()->setAnimationInterval(m_dAnimationInterval);
+	if (CCApplication::sharedApplication())
+	{
+		CCApplication::sharedApplication()->setAnimationInterval(m_dAnimationInterval);
+	}    
 #endif // EMSCRIPTEN
 }
 
 void CCDisplayLinkDirector::mainLoop(void)
 {
-    if (m_bPurgeDirecotorInNextLoop)
-    {
-        m_bPurgeDirecotorInNextLoop = false;
-        purgeDirector();
-    }
-    else if (! m_bInvalid)
-     {
-         drawScene();
-     
-         // release the objects
-         CCPoolManager::sharedPoolManager()->pop();        
-     }
+	if (CCProfiler::sharedProfiler()->isEnablePerFrameLog())
+	{
+		CCProfiler::sharedProfiler()->releaseAllTimers();
+	}	
+	
+	m_bPrintCurFrameCostTime = false;
+	long long startTime = 0;
+
+	if(m_bOpenTest)
+	{
+		struct timeval tv;  
+		gettimeofday(&tv,NULL);
+		startTime = tv.tv_sec;
+		startTime *= 1000;
+		startTime += tv.tv_usec / 1000;
+	}
+
+
+	{
+		//root callnode Ãû×ÖÖ¸¶¨
+		CCProfilerHelper profilerHelper("CCDirector", "mainLoop");
+
+		if (m_bPurgeDirecotorInNextLoop)
+		{
+			m_bPurgeDirecotorInNextLoop = false;
+			purgeDirector();
+			return;
+		}
+		else if (isRendering())
+		{
+			drawScene();
+
+			// release the objects
+			CCProfilerHelper profilerHelper("CCPoolManager", "pop");
+			CCPoolManager::sharedPoolManager()->pop();        
+		}
+
+		for(unsigned int i = 0; i < m_vecDrawSceneListener.size(); i++)
+		{
+			CCDrawSceneListener* pListener = m_vecDrawSceneListener[i];
+			if(pListener)
+			{
+				pListener->onMainLoopEnd();
+			}
+		}
+	}
+
+	CCProfiler::sharedProfiler()->mergeCallTree();
+	if (CCProfiler::sharedProfiler()->isEnablePerFrameLog())
+	{
+		/*gettimeofday(&tv, NULL);
+		long long endTime = tv.tv_sec;
+		endTime *= 1000;
+		endTime += tv.tv_usec / 1000;
+
+		if(endTime - startTime < 50)
+		{
+			return;
+		}*/
+		CCProfiler::sharedProfiler()->displayTimers();	
+	}
+
+	if(m_bOpenTest && m_bPrintCurFrameCostTime)
+	{
+		struct timeval tv;  
+		gettimeofday(&tv,NULL);
+		long long endTime = tv.tv_sec;
+		endTime *= 1000;
+		endTime += tv.tv_usec / 1000;
+		CCLog("printAuidoTestData***current frame costtime = %lld, frame = %f", endTime - startTime, getFPS());
+	}
+}
+
+void CCDirector::mainLoopForAddFrame( float delta )
+{
+	if (m_bPaused)
+	{
+		return;
+	}
+	
+	drawSceneForAddFrame(delta);
+
+	// release the objects
+	CCPoolManager::sharedPoolManager()->pop();        
+}
+
+void CCDirector::setNetTcpDelay( int nDelay )
+{
+	m_nNetTcpDelay = nDelay;
+}
+
+void CCDirector::setNetUdpDelay( int nDelay )
+{
+	m_nNetUdpDelay = nDelay;
+}
+
+bool CCDirector::isEnableAutoBatch()
+{
+	return m_bAutoBatch;
+}
+
+void CCDirector::flushDraw()
+{
+	metis::CCBatchNodeMgr::GetInstance()->FlushDraw();
 }
 
 void CCDisplayLinkDirector::stopAnimation(void)
 {
-    m_bInvalid = true;
+	m_bIsAnimationPlaying = false;
 }
 
 void CCDisplayLinkDirector::setAnimationInterval(double dValue)
 {
     m_dAnimationInterval = dValue;
-    if (! m_bInvalid)
+	if (m_bIsAnimationPlaying)
     {
         stopAnimation();
         startAnimation();

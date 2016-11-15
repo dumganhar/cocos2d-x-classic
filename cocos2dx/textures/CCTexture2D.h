@@ -27,6 +27,7 @@ THE SOFTWARE.
 #define __CCTEXTURE2D_H__
 
 #include <string>
+#include <set>
 #include "cocoa/CCObject.h"
 #include "cocoa/CCGeometry.h"
 #include "ccTypes.h"
@@ -37,6 +38,7 @@ THE SOFTWARE.
 NS_CC_BEGIN
 
 class CCImage;
+struct CCPVRMipmap;
 
 /**
  * @addtogroup textures
@@ -122,7 +124,9 @@ public:
     void* keepData(void *data, unsigned int length);
 
     /** Initializes with a texture2d with data */
-    bool initWithData(const void* data, CCTexture2DPixelFormat pixelFormat, unsigned int pixelsWide, unsigned int pixelsHigh, const CCSize& contentSize);
+    bool initWithData(const void* data, unsigned int dataLen, CCTexture2DPixelFormat pixelFormat, unsigned int pixelsWide, unsigned int pixelsHigh, const CCSize& contentSize);
+
+    bool initWithMipmaps(CCPVRMipmap* midmaps, int mipmapsNum, CCTexture2DPixelFormat pixelFormat, GLenum internalFormat, GLenum pixelDataformat, GLenum pixelDataType, bool compressed, unsigned int pixelsWide, unsigned int pixelsHigh, const CCSize& contentSize);
 
     /**
     Drawing extensions to make it easy to draw basic quads using a CCTexture2D object.
@@ -163,6 +167,8 @@ public:
     */
     void setTexParameters(ccTexParams* texParams);
 
+    void setTexWrapRepeat();
+    void setTexWrapEdge();
     /** sets antialias texture parameters:
     - GL_TEXTURE_MIN_FILTER = GL_LINEAR
     - GL_TEXTURE_MAG_FILTER = GL_LINEAR
@@ -198,12 +204,14 @@ public:
     /** returns the bits-per-pixel of the in-memory OpenGL texture
     @since v1.0
     */
-    unsigned int bitsPerPixelForFormat();  
+    unsigned int bitsPerPixelForFormat();
 
     /** Helper functions that returns bits per pixels for a given format.
      @since v2.0
      */
     unsigned int bitsPerPixelForFormat(CCTexture2DPixelFormat format);
+
+    unsigned int bitsPerPixelInDataForFormat(CCTexture2DPixelFormat format);
 
     /** sets the default pixel format for UIImagescontains alpha channel.
     If the UIImage contains alpha channel, then the options are:
@@ -228,6 +236,10 @@ public:
     @since v0.8
     */
     static CCTexture2DPixelFormat defaultAlphaPixelFormat();
+
+    static void setHigePixelFormatFiles(std::set<std::string>& files);
+
+    static void setLowPixelFormatFiles(std::set<std::string>& files);
 
     /** treats (or not) PVR files as if they have alpha premultiplied.
      Since it is impossible to know at runtime if the PVR images have the alpha channel premultiplied, it is
@@ -274,6 +286,9 @@ private:
 
     /** shader program used by drawAtPoint and drawInRect */
     CC_PROPERTY(CCGLProgram*, m_pShaderProgram, ShaderProgram);
+	#if CC_TARGET_PLATFORM == CC_PLATFORM_WIN32
+	std::string m_sFileName;
+	#endif
 };
 
 // end of textures group

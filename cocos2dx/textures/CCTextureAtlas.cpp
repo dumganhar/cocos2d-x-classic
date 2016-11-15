@@ -37,6 +37,7 @@ THE SOFTWARE.
 #include "CCTexture2D.h"
 #include "cocoa/CCString.h"
 #include <stdlib.h>
+#include "CCDirector.h"
 
 //According to some tests GL_TRIANGLE_STRIP is slower, MUCH slower. Probably I'm doing something very wrong
 
@@ -654,7 +655,9 @@ void CCTextureAtlas::drawNumberOfQuads(unsigned int n, unsigned int start)
     // XXX: update is done in draw... perhaps it should be done in a timer
     if (m_bDirty) 
     {
+		// OFFSET SIZE DATA
         glBufferSubData(GL_ARRAY_BUFFER, sizeof(m_pQuads[0])*start, sizeof(m_pQuads[0]) * n , &m_pQuads[start] );
+
         m_bDirty = false;
     }
 
@@ -683,6 +686,9 @@ void CCTextureAtlas::drawNumberOfQuads(unsigned int n, unsigned int start)
 #endif // CC_TEXTURE_ATLAS_USE_VAO
 
     CC_INCREMENT_GL_DRAWN_BATCHES_AND_VERTICES(1, n*6);
+#if CC_TARGET_PLATFORM == CC_PLATFORM_WIN32
+	CCDirector::sharedDirector()->addDrawTextureIDToVec(m_pTexture->getName());
+#endif
     CHECK_GL_ERROR_DEBUG();
 }
 

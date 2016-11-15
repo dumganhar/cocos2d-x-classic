@@ -62,7 +62,7 @@ public:
      * @param table table contains the given cell
      * @param cell  cell that is pressed
      */
-    virtual void tableCellHighlight(CCTableView* table, CCTableViewCell* cell){};
+    virtual void tableCellHighlight(CCTableView* /*table*/, CCTableViewCell* /*cell*/){};
 
     /**
      * Delegate to respond a table cell release event
@@ -70,7 +70,7 @@ public:
      * @param table table contains the given cell
      * @param cell  cell that is pressed
      */
-    virtual void tableCellUnhighlight(CCTableView* table, CCTableViewCell* cell){};
+    virtual void tableCellUnhighlight(CCTableView* /*table*/, CCTableViewCell* /*cell*/){};
 
     /**
      * Delegate called when the cell is about to be recycled. Immediately
@@ -80,7 +80,7 @@ public:
      * @param table table contains the given cell
      * @param cell  cell that is pressed
      */
-    virtual void tableCellWillRecycle(CCTableView* table, CCTableViewCell* cell){};
+    virtual void tableCellWillRecycle(CCTableView* /*table*/, CCTableViewCell* /*cell*/){};
 
 };
 
@@ -99,7 +99,7 @@ public:
      * @param idx the index of a cell to get a size
      * @return size of a cell at given index
      */
-    virtual CCSize tableCellSizeForIndex(CCTableView *table, unsigned int idx) {
+    virtual CCSize tableCellSizeForIndex(CCTableView *table, unsigned int /*idx*/) {
         return cellSizeForTable(table);
     };
     /**
@@ -108,7 +108,7 @@ public:
      * @param table table to hold the instances of Class
      * @return cell size
      */
-    virtual CCSize cellSizeForTable(CCTableView *table) {
+    virtual CCSize cellSizeForTable(CCTableView * /*table*/) {
         return CCSizeZero;
     };
     /**
@@ -214,16 +214,30 @@ public:
      */
     CCTableViewCell *cellAtIndex(unsigned int idx);
 
+	CCArrayForObjectSorting* getUsedCell() { return m_pCellsUsed; };
+	CCArrayForObjectSorting* getFreeCell() { return m_pCellsFreed; };
 
+	int getCellSize () {return static_cast<int>(m_vCellsPositions.size());};
     virtual void scrollViewDidScroll(CCScrollView* view);
-    virtual void scrollViewDidZoom(CCScrollView* view) {}
+    virtual void scrollViewDidZoom(CCScrollView* /*view*/) {}
 
     virtual bool ccTouchBegan(CCTouch *pTouch, CCEvent *pEvent);
     virtual void ccTouchMoved(CCTouch *pTouch, CCEvent *pEvent);
     virtual void ccTouchEnded(CCTouch *pTouch, CCEvent *pEvent);
     virtual void ccTouchCancelled(CCTouch *pTouch, CCEvent *pEvent);
 
+	//
+	void setAutoScroll(int nScrollSize){m_bAutoScrollSize = nScrollSize;};
+	//获取当前页
+	virtual int getPageIdx();
+	//获取滑动目标页
+	virtual int getPageIdxTarget(){ return m_iPageTarget;};
+	virtual void setPageIdxTarget(int pageTarget){ m_iPageTarget = pageTarget;};
+
+	virtual void pageNext();
+	virtual void pagePrev();
 protected:
+	CCPoint m_touchStartContentPos;
 
     CCTableViewCell *m_pTouchedCell;
     /**
@@ -258,20 +272,29 @@ protected:
      */
     CCTableViewDelegate* m_pTableViewDelegate;
 
+	int m_bAutoScrollSize;
+
 	CCScrollViewDirection m_eOldDirection;
 
-    int __indexFromOffset(CCPoint offset);
-    unsigned int _indexFromOffset(CCPoint offset);
-    CCPoint __offsetFromIndex(unsigned int index);
-    CCPoint _offsetFromIndex(unsigned int index);
+	int m_iPageTarget;
+	
+	int m_iPageMax;
+	bool m_bInAnimation;
+
+    virtual int __indexFromOffset(CCPoint offset);
+    virtual unsigned int _indexFromOffset(CCPoint offset);
+    virtual CCPoint __offsetFromIndex(unsigned int index);
+    virtual CCPoint _offsetFromIndex(unsigned int index);
 
     void _moveCellOutOfSight(CCTableViewCell *cell);
     void _setIndexForCell(unsigned int index, CCTableViewCell *cell);
     void _addCellIfNecessary(CCTableViewCell * cell);
 
-    void _updateCellPositions();
+    virtual void _updateCellPositions();
 public:
     void _updateContentSize();
+	void _alignToPage(int iPage);
+	void _slideEnd(float dt);
 
 };
 

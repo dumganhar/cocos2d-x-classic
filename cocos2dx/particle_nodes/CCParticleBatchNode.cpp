@@ -123,6 +123,7 @@ bool CCParticleBatchNode::initWithFile(const char* fileImage, unsigned int capac
 // Don't call visit on it's children
 void CCParticleBatchNode::visit()
 {
+	CC_PROFILER_HELPER;
     // CAREFUL:
     // This visit is almost identical to CCNode#visit
     // with the exception that it doesn't call visit on it's children
@@ -409,6 +410,7 @@ void CCParticleBatchNode::draw(void)
     {
         return;
     }
+	CCDirector::sharedDirector()->flushDraw();
 
     CC_NODE_DRAW_SETUP();
 

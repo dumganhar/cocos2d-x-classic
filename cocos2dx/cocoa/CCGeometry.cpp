@@ -82,6 +82,11 @@ CCPoint CCPoint::operator/(float a) const
     return CCPoint(this->x / a, this->y / a);
 }
 
+bool CCPoint::operator!=(const CCPoint& right)
+{
+	return this->x != right.x || this->y != right.y;
+}
+
 void CCPoint::setPoint(float x, float y)
 {
     this->x = x;

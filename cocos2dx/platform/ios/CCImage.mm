@@ -31,6 +31,8 @@ THE SOFTWARE.
 
 #include<math.h>
 
+#include "support/ccUtils.h"
+#include "support/zip_support/ZipUtils.h"
 
 typedef struct
 {
@@ -415,6 +417,27 @@ static bool _initWithString(const char * pText, cocos2d::CCImage::ETextAlign eAl
 
 NS_CC_BEGIN
 
+void decryptBuffer(unsigned char* buffer, unsigned int length, int hash)
+{
+    if (!buffer || 0==length)
+    {
+        return;
+    }
+	
+    //canny
+    int iLimit = 40960;
+    if(iLimit>(int)length)
+    {
+        iLimit = length;
+    }
+    
+    for (int i=0; i<iLimit; ++i)
+    {
+        buffer[i] = ccBitrand(buffer[i]);
+        buffer[i] ^= ((hash + iLimit - i) % 256);
+    }
+}
+
 CCImage::CCImage()
 : m_nWidth(0)
 , m_nHeight(0)
@@ -422,6 +445,8 @@ CCImage::CCImage()
 , m_pData(0)
 , m_bHasAlpha(false)
 , m_bPreMulti(false)
+, m_bCompressed(false)
+, m_uNumberOfMipmaps(0)
 {
     
 }
@@ -443,6 +468,12 @@ bool CCImage::initWithImageFile(const char * strPath, EImageFormat eImgFmt/* = e
     if (pBuffer != NULL && nSize > 0)
     {
         bRet = initWithImageData(pBuffer, nSize, eImgFmt);
+        if (!bRet)
+        {
+            decryptBuffer(pBuffer, nSize, ccHash(ccFileName(strPath).c_str()));
+            bRet = initWithImageData(pBuffer, nSize, eImgFmt);
+            CCLOG("[CCImage::initWithImageFile] deal with encrypted image: %s", strPath);
+        }
     }
     CC_SAFE_DELETE_ARRAY(pBuffer);
     return bRet;
@@ -458,7 +489,40 @@ bool CCImage::initWithImageFileThreadSafe(const char *fullpath, EImageFormat ima
     unsigned char* pBuffer = CCFileUtils::sharedFileUtils()->getFileData(fullpath, "rb", &nSize);
     if (pBuffer != NULL && nSize > 0)
     {
-        bRet = initWithImageData(pBuffer, nSize, imageType);
+	    bRet = true;
+
+        // uncompress pvr.ccz file
+        if (imageType == kFmtPvr)
+        {
+            unsigned char *pUncompressedBuffer = NULL;
+            int nUncompressedSize = 0;
+            nUncompressedSize = ZipUtils::ccInflateCCZData(pBuffer, nSize, &pUncompressedBuffer);
+            bRet = nUncompressedSize >= 0;
+            if (!bRet)
+            {
+                decryptBuffer(pBuffer, nSize, ccHash(ccFileName(fullpath).c_str()));
+                nUncompressedSize = ZipUtils::ccInflateCCZData(pBuffer, nSize, &pUncompressedBuffer);
+                bRet = nUncompressedSize >= 0;
+            }
+            if (bRet)
+            {
+                CC_SAFE_DELETE_ARRAY(pBuffer);
+                pBuffer = pUncompressedBuffer;
+                nSize = nUncompressedSize;
+            }
+        }
+
+        // parze image data
+        if (bRet)
+        {
+		    bRet = initWithImageData(pBuffer, nSize, imageType);
+            if (!bRet)
+            {
+                decryptBuffer(pBuffer, nSize, ccHash(ccFileName(fullpath).c_str()));
+                bRet = initWithImageData(pBuffer, nSize, imageType);
+                CCLOG("[CCImage::initWithImageFileThreadSafe] deal with encrypted image: %s", fullpath);
+            }
+        }
     }
     CC_SAFE_DELETE_ARRAY(pBuffer);
     return bRet;
@@ -487,6 +551,10 @@ bool CCImage::initWithImageData(void * pData,
         else if (eFmt == kFmtWebp)
         {
             bRet = _initWithWebpData(pData, nDataLen);
+        }
+        else if (eFmt == kFmtPvr)
+        {
+            bRet = _initWithPvrData(pData, nDataLen);
         }
         else // init with png or jpg file data
         {

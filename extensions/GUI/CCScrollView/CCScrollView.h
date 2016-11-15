@@ -111,7 +111,8 @@ public:
      * @param animation duration
      */
     void setContentOffsetInDuration(CCPoint offset, float dt); 
-
+	void setContentOffsetInEaseDuration(CCPoint offset, float dt); 
+	
     void setZoomScale(float s);
     /**
      * Sets a new scale and does that for a predefined duration.
@@ -201,6 +202,7 @@ public:
     virtual void addChild(CCNode * child, int zOrder);
     virtual void addChild(CCNode * child);
     void setTouchEnabled(bool e);
+	void stopAnimateScroll();
 private:
     /**
      * Relocates the container at the proper offset, in bounds of max/min offsets.
@@ -322,6 +324,10 @@ protected:
      */
     CCRect m_tParentScissorRect;
     bool m_bScissorRestored;
+    
+    float m_fFoucsScale;
+    
+    float m_fStartX;
 };
 
 // end of GUI group

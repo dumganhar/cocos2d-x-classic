@@ -28,9 +28,11 @@ THE SOFTWARE.
 #include "shaders/CCGLProgram.h"
 #include "shaders/CCShaderCache.h"
 #include "ccMacros.h"
+#include "CCDirector.h"
 
 #include "support/CCVertex.h"
 #include "support/CCPointExtension.h"
+#include "support/CCProfiling.h"
 
 NS_CC_BEGIN
 
@@ -40,7 +42,9 @@ CCMotionStreak::CCMotionStreak()
 , m_pTexture(NULL)
 , m_tPositionR(CCPointZero)
 , m_fStroke(0.0f)
+, m_fOriginalStroke(0.0f)
 , m_fFadeDelta(0.0f)
+, m_fOriginalFadeDelta(0.0f)
 , m_fMinSeg(0.0f)
 , m_uMaxPoints(0)
 , m_uNuPoints(0)
@@ -50,6 +54,7 @@ CCMotionStreak::CCMotionStreak()
 , m_pVertices(NULL)
 , m_pColorPointer(NULL)
 , m_pTexCoords(NULL)
+, m_bJudgeValid(true)
 {
     m_tBlendFunc.src = GL_SRC_ALPHA;
     m_tBlendFunc.dst = GL_ONE_MINUS_SRC_ALPHA;
@@ -112,7 +117,9 @@ bool CCMotionStreak::initWithFade(float fade, float minSeg, float stroke, ccColo
     m_fMinSeg *= m_fMinSeg;
 
     m_fStroke = stroke;
+	m_fOriginalStroke = stroke;
     m_fFadeDelta = 1.0f/fade;
+	m_fOriginalFadeDelta = m_fFadeDelta;
 
     m_uMaxPoints = (int)(fade*60.0f)+2;
     m_uNuPoints = 0;
@@ -292,11 +299,11 @@ void CCMotionStreak::update(float delta)
         {
             if(m_uNuPoints > 1)
             {
-                ccVertexLineToPolygon(m_pPointVertexes, m_fStroke, m_pVertices, m_uNuPoints, 1);
+                ccVertexLineToPolygon(m_pPointVertexes, m_fStroke, m_pVertices, m_uNuPoints, 1, m_bJudgeValid);
             }
             else
             {
-                ccVertexLineToPolygon(m_pPointVertexes, m_fStroke, m_pVertices, 0, 2);
+                ccVertexLineToPolygon(m_pPointVertexes, m_fStroke, m_pVertices, 0, 2, m_bJudgeValid);
             }
         }
 
@@ -305,7 +312,7 @@ void CCMotionStreak::update(float delta)
 
     if( ! m_bFastMode )
     {
-        ccVertexLineToPolygon(m_pPointVertexes, m_fStroke, m_pVertices, 0, m_uNuPoints);
+        ccVertexLineToPolygon(m_pPointVertexes, m_fStroke, m_pVertices, 0, m_uNuPoints, m_bJudgeValid);
     }
 
     // Updated Tex Coords only if they are different than previous step
@@ -327,8 +334,11 @@ void CCMotionStreak::reset()
 
 void CCMotionStreak::draw()
 {
+	CC_PROFILER_HELPER;
     if(m_uNuPoints <= 1)
         return;
+
+	CCDirector::sharedDirector()->flushDraw();
 
     CC_NODE_DRAW_SETUP();
 
@@ -356,7 +366,22 @@ void CCMotionStreak::draw()
     glDrawArrays(GL_TRIANGLE_STRIP, 0, (GLsizei)m_uNuPoints*2);
 
     CC_INCREMENT_GL_DRAWN_BATCHES_AND_VERTICES(1, m_uNuPoints*2);
+#if CC_TARGET_PLATFORM == CC_PLATFORM_WIN32
+	CCDirector::sharedDirector()->addDrawTextureIDToVec(m_pTexture->getName());
+#endif
 }
+
+void CCMotionStreak::setStreakScaleX( float fScaleX )
+{
+	m_fStroke = m_fOriginalStroke * fScaleX;
+}
+
+void CCMotionStreak::setStreakScaleY( float fScaleY )
+{
+	m_fFadeDelta = m_fOriginalFadeDelta / fScaleY;
+}
+
+
 
 NS_CC_END
 

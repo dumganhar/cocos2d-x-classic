@@ -24,6 +24,7 @@ THE SOFTWARE.
 
 #include "SimpleAudioEngine.h"
 #include "jni/SimpleAudioEngineJni.h"
+#include "jni/SimpleAudioEngineOpenSLJni.h"
 #include "opensl/SimpleAudioEngineOpenSL.h"
 
 #include "cocos2d.h"
@@ -37,6 +38,7 @@ THE SOFTWARE.
 #define  LOGD(...)  __android_log_print(ANDROID_LOG_DEBUG,LOG_TAG,__VA_ARGS__)
 
 static bool s_bI9100 = false;
+static bool s_bUseOpenSL = false;
 
 USING_NS_CC;
 /**********************************************************************************
@@ -44,6 +46,7 @@ USING_NS_CC;
  **********************************************************************************/
 #define  CLASS_NAME   "org/cocos2dx/lib/Cocos2dxHelper"
 #define  METHOD_NAME  "getDeviceModel"
+#define  METHOD_SYS_VERSION_NAME  "getSysVersionRelease"
 
 namespace CocosDenshion {
 
@@ -73,15 +76,13 @@ SimpleAudioEngine::SimpleAudioEngine()
 	methodInfo.env->DeleteLocalRef(methodInfo.classID);
 	
 	const char* deviceModel = methodInfo.env->GetStringUTFChars(jstr, NULL);
-    
-	LOGD("%s", deviceModel);
-    
-	if (strcmp(I9100_MODEL, deviceModel) == 0)
+	LOGD("SimpleAudioEngine deviceModel: %s", deviceModel);
+
+	/*if (strcmp(I9100_MODEL, deviceModel) == 0)
 	{
 		LOGD("i9100 model\nSwitch to OpenSLES");
 		s_bI9100 = true;
-	}
-    
+	}*/
 	methodInfo.env->ReleaseStringUTFChars(jstr, deviceModel);
 	methodInfo.env->DeleteLocalRef(jstr);
 }
@@ -92,6 +93,11 @@ SimpleAudioEngine::~SimpleAudioEngine()
 	{
 		SimpleAudioEngineOpenSL::sharedEngine()->end();
 	}
+	else if (s_bUseOpenSL)
+	{
+		endOpenSLJNI();
+	}
+	
 }
 
 SimpleAudioEngine* SimpleAudioEngine::sharedEngine()
@@ -110,6 +116,10 @@ void SimpleAudioEngine::end()
 	{
 		SimpleAudioEngineOpenSL::sharedEngine()->end();
 	}
+	else if (s_bUseOpenSL)
+	{
+		endOpenSLJNI();
+	}	
 	else
 	{
 		endJNI();
@@ -174,6 +184,10 @@ float SimpleAudioEngine::getEffectsVolume()
 	{
 		return SimpleAudioEngineOpenSL::sharedEngine()->getEffectsVolume();
 	}
+	else if (s_bUseOpenSL)
+	{
+		return getEffectsVolumeOpenSLJNI();
+	}	
 	else
 	{
 		return getEffectsVolumeJNI();
@@ -186,6 +200,10 @@ void SimpleAudioEngine::setEffectsVolume(float volume)
 	{
 		SimpleAudioEngineOpenSL::sharedEngine()->setEffectsVolume(volume);
 	}
+	else if (s_bUseOpenSL)
+	{
+		setEffectsVolumeOpenSLJNI(volume);
+	}	
 	else
 	{
 		setEffectsVolumeJNI(volume);
@@ -199,6 +217,10 @@ unsigned int SimpleAudioEngine::playEffect(const char* pszFilePath, bool bLoop)
 	{
 		return SimpleAudioEngineOpenSL::sharedEngine()->playEffect(fullPath.c_str(), bLoop);
 	}
+	else if (s_bUseOpenSL)
+	{
+		return playEffectOpenSLJNI(fullPath.c_str(), bLoop);
+	}	
 	else 
 	{
 		return playEffectJNI(fullPath.c_str(), bLoop);
@@ -211,6 +233,10 @@ void SimpleAudioEngine::stopEffect(unsigned int nSoundId)
 	{
 		SimpleAudioEngineOpenSL::sharedEngine()->stopEffect(nSoundId);
 	}
+	else if (s_bUseOpenSL)
+	{
+		stopEffectOpenSLJNI(nSoundId);
+	}	
 	else
 	{
 		stopEffectJNI(nSoundId);
@@ -225,6 +251,10 @@ void SimpleAudioEngine::preloadEffect(const char* pszFilePath)
 	{
 		SimpleAudioEngineOpenSL::sharedEngine()->preloadEffect(fullPath.c_str());
 	}
+	else if (s_bUseOpenSL)
+	{
+		preloadEffectOpenSLJNI(fullPath.c_str());
+	}	
 	else
 	{
 		preloadEffectJNI(fullPath.c_str());
@@ -239,6 +269,10 @@ void SimpleAudioEngine::unloadEffect(const char* pszFilePath)
 	{
 		SimpleAudioEngineOpenSL::sharedEngine()->unloadEffect(fullPath.c_str());
 	}
+	else if (s_bUseOpenSL)
+	{
+		unloadEffectOpenSLJNI(fullPath.c_str());
+	}	
 	else
 	{
 		unloadEffectJNI(fullPath.c_str());
@@ -251,6 +285,10 @@ void SimpleAudioEngine::pauseEffect(unsigned int nSoundId)
 	{
 		SimpleAudioEngineOpenSL::sharedEngine()->pauseEffect(nSoundId);
 	}
+	else if (s_bUseOpenSL)
+	{
+		pauseEffectOpenSLJNI(nSoundId);
+	}	
 	else
 	{
 		pauseEffectJNI(nSoundId);
@@ -263,6 +301,10 @@ void SimpleAudioEngine::pauseAllEffects()
 	{
 		SimpleAudioEngineOpenSL::sharedEngine()->pauseAllEffects();
 	}
+	else if (s_bUseOpenSL)
+	{
+		pauseAllEffectsOpenSLJNI();
+	}	
 	else
 	{
 		pauseAllEffectsJNI();
@@ -275,6 +317,10 @@ void SimpleAudioEngine::resumeEffect(unsigned int nSoundId)
 	{
 		SimpleAudioEngineOpenSL::sharedEngine()->resumeEffect(nSoundId);
 	}
+	else if (s_bUseOpenSL)
+	{
+		resumeEffectOpenSLJNI(nSoundId);
+	}	
 	else
 	{
 		resumeEffectJNI(nSoundId);
@@ -287,6 +333,10 @@ void SimpleAudioEngine::resumeAllEffects()
 	{
 		SimpleAudioEngineOpenSL::sharedEngine()->resumeAllEffects();
 	}
+	else if (s_bUseOpenSL)
+	{
+		resumeAllEffectsOpenSLJNI();
+	}	
 	else
 	{
 		resumeAllEffectsJNI();
@@ -299,10 +349,32 @@ void SimpleAudioEngine::stopAllEffects()
 	{
 		SimpleAudioEngineOpenSL::sharedEngine()->stopAllEffects();
 	}
+	else if (s_bUseOpenSL)
+	{
+		stopAllEffectsOpenSLJNI();
+	}	
 	else
 	{
 		stopAllEffectsJNI();
 	}
+}
+
+void SimpleAudioEngine::useOpenSL(bool bUse)
+{
+	s_bUseOpenSL = bUse;
+}
+
+void SimpleAudioEngine::vibrate(long time)
+{
+	vibrateJNI(time);
+}
+void SimpleAudioEngine::vibrateWithPattern(long pattern[], int repeat)
+{
+	vibrateWithPatternJNI(pattern, repeat);
+}
+void SimpleAudioEngine::cancelVibrate()
+{
+	cancelVibrateJNI();
 }
 
 }

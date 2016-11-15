@@ -292,6 +292,8 @@ public:
      * @param position  The position (x,y) of the node in OpenGL coordinates
      */
     virtual void setPosition(const CCPoint &position);
+	//overload 
+	virtual void setPos(const CCPoint& newPosition);
     /**
      * Gets the position (x,y) of the node in OpenGL coordinates
      * 
@@ -450,6 +452,8 @@ public:
      * @param fRotation     The roration of the node in degrees.
      */
     virtual void setRotation(float fRotation);
+	//应用层重写
+	virtual void setRota(float fRotation);
     /**
      * Returns the rotation of the node in degrees.
      *
@@ -1332,6 +1336,16 @@ public:
     virtual void removeAllComponents();
     /// @} end of component functions
 
+	void createOwnActionmanager(CCNode* pSchedulerNode);
+
+    void iteratorSetChildActionmanager(CCActionManager* pManager,CCScheduler* pScheduler);
+    void iteratorSetChildShader(CCGLProgram* programe);
+
+	CCNode* iteratorFindChildByTag(int nTag);
+
+public:
+	kmMat4  _modelViewTransform;    ///< ModelView transform of the Node.
+
 private:
     /// lazy allocs
     void childrenAlloc(void);
@@ -1374,7 +1388,7 @@ protected:
     CCGridBase *m_pGrid;                ///< a grid
     
     int m_nZOrder;                      ///< z-order value that affects the draw order
-    
+
     CCArray *m_pChildren;               ///< array of children nodes
     CCNode *m_pParent;                  ///< weak reference to parent node
     
@@ -1409,6 +1423,12 @@ protected:
     int m_nUpdateScriptHandler;         ///< script handler for update() callback per frame, which is invoked from lua & javascript.
     ccScriptType m_eScriptType;         ///< type of script binding, lua or javascript
     
+	/*
+      部分Node使用自己的信息。 不使用通用的。 考虑下保存在自己这里算了
+     */
+    CC_PROPERTY(CCScheduler*, m_pOwnScheduler, OwnScheduler);
+    CC_PROPERTY(CCActionManager*, m_pOwnActionManager, OwnActionManager);
+
     CCComponentContainer *m_pComponentContainer;        ///< Dictionary of components
 
     static int s_attachedNodeCount;
@@ -1433,6 +1453,12 @@ public:
     
     virtual bool init();
     
+    /**
+     * Allocates and initializes a nodergba.
+     * @return A initialized node which is marked as "autorelease".
+     */
+    static CCNodeRGBA * create(void);
+    
     virtual GLubyte getOpacity();
     virtual GLubyte getDisplayedOpacity();
     virtual void setOpacity(GLubyte opacity);
@@ -1447,7 +1473,7 @@ public:
     virtual bool isCascadeColorEnabled();
     virtual void setCascadeColorEnabled(bool cascadeColorEnabled);
     
-    virtual void setOpacityModifyRGB(bool bValue) {};
+    virtual void setOpacityModifyRGB(bool /*bValue*/) {};
     virtual bool isOpacityModifyRGB() { return false; };
 
 protected:

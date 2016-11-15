@@ -88,6 +88,8 @@ public:
      */
     void addSpriteFrame(CCSpriteFrame *pobFrame, const char *pszFrameName);
 
+	CCTexture2D* getTextureByPlist(const std::string& strPlist);
+
     /** Purges the dictionary of loaded sprite frames.
      * Call this method if you receive the "Memory Warning".
      * In the short term: it will free some resources preventing your app from being killed.
@@ -110,8 +112,9 @@ public:
     * It is convenient to call this method when a specific texture needs to be removed.
     * @since v0.99.5
     */
-    void removeSpriteFramesFromFile(const char* plist);
+    void removeSpriteFramesFromFile(const char* plist, bool bForce = true);
 
+	void clearCachePlistDictionary();
 private:
     /** Removes multiple Sprite Frames from CCDictionary.
     * @since v0.99.5
@@ -140,10 +143,15 @@ public:
 private:
     // MARMALADE: Made this protected not private, as deriving from this class is pretty useful
 //    CCSpriteFrameCache(void) : m_pSpriteFrames(NULL), m_pSpriteFramesAliases(NULL){}
+
+private:
+	CCDictionary* getPlistDictionary(std::string strPlist, bool bForce = true);
 protected:
     CCDictionary* m_pSpriteFrames;
     CCDictionary* m_pSpriteFramesAliases;
     std::set<std::string>*  m_pLoadedFileNames;
+
+	std::map<std::string, CCDictionary*> m_cachePlistDictionary;
 };
 
 // end of sprite_nodes group

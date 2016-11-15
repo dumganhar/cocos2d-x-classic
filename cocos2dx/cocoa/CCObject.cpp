@@ -110,6 +110,11 @@ unsigned int CCObject::retainCount(void) const
     return m_uReference;
 }
 
+unsigned int CCObject::autoReleaseCount(void) const
+{
+	return m_uAutoReleaseCount;
+}
+
 bool CCObject::isEqual(const CCObject *pObject)
 {
     return this == pObject;

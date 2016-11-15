@@ -52,6 +52,15 @@ void CC_DLL CCLuaLog(const char * pszFormat);
 */
 void CC_DLL CCMessageBox(const char * pszMsg, const char * pszTitle);
 
+#define CC_CAL_TIME_START\
+    int start, end;\
+    start = time(NULL);
+
+#define CC_CAL_TIME_NEXT\
+    end = time(NULL);\
+    CCLOG("=== CAL_TIME %d===", end-start);\
+    start = end;
+
 /**
 @brief Enum the language type supported now
 */

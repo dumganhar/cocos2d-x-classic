@@ -310,7 +310,7 @@ CCSize CCShuffleTiles::getDelta(const CCSize& pos)
 {
     CCPoint    pos2;
 
-    unsigned int idx = pos.width * m_sGridSize.height + pos.height;
+    unsigned int idx = (unsigned int)(pos.width * m_sGridSize.height + pos.height);
 
     pos2.x = (float)(m_pTilesOrder[idx] / (int)m_sGridSize.height);
     pos2.y = (float)(m_pTilesOrder[idx] % (int)m_sGridSize.height);
@@ -347,7 +347,7 @@ void CCShuffleTiles::startWithTarget(CCNode *pTarget)
         srand(m_nSeed);
     }
 
-    m_nTilesCount = m_sGridSize.width * m_sGridSize.height;
+    m_nTilesCount = (unsigned int)(m_sGridSize.width * m_sGridSize.height);
     m_pTilesOrder = new unsigned int[m_nTilesCount];
     int i, j;
     unsigned int k;
@@ -704,7 +704,7 @@ void CCTurnOffTiles::startWithTarget(CCNode *pTarget)
         srand(m_nSeed);
     }
 
-    m_nTilesCount = m_sGridSize.width * m_sGridSize.height;
+    m_nTilesCount = (unsigned int)(m_sGridSize.width * m_sGridSize.height);
     m_pTilesOrder = new unsigned int[m_nTilesCount];
 
     for (i = 0; i < m_nTilesCount; ++i)

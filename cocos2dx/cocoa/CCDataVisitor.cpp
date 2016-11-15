@@ -77,6 +77,7 @@ void CCDataVisitor::visit(const CCSet *value)
 // CCPrettyPrinter
 CCPrettyPrinter::CCPrettyPrinter(int indentLevel/* = 0 */)
 {
+	CCLog("CCPrettyPrinter::CCPrettyPrinter create");
     setIndentLevel(indentLevel);
 }
 

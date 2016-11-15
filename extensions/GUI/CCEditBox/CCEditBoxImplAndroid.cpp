@@ -73,6 +73,8 @@ bool CCEditBoxImplAndroid::initWithSize(const CCSize& size)
     m_pLabel->setAnchorPoint(ccp(0, 0.5f));
     m_pLabel->setPosition(ccp(CC_EDIT_BOX_PADDING, size.height / 2.0f));
     m_pLabel->setColor(m_colText);
+	m_pLabel->setHorizontalAlignment(kCCTextAlignmentLeft);
+	m_pLabel->setDimensions(size);
     m_pEditBox->addChild(m_pLabel);
 	
     m_pLabelPlaceHolder = CCLabelTTF::create("", "", size.height-12);
@@ -81,6 +83,8 @@ bool CCEditBoxImplAndroid::initWithSize(const CCSize& size)
     m_pLabelPlaceHolder->setPosition(ccp(CC_EDIT_BOX_PADDING, size.height / 2.0f));
     m_pLabelPlaceHolder->setVisible(false);
     m_pLabelPlaceHolder->setColor(m_colPlaceHolder);
+	m_pLabelPlaceHolder->setDimensions(size);
+	m_pLabelPlaceHolder->setHorizontalAlignment(kCCTextAlignmentLeft);
     m_pEditBox->addChild(m_pLabelPlaceHolder);
     
     m_EditSize = size;

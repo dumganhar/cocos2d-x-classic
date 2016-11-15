@@ -53,6 +53,12 @@ NS_CC_EXT_BEGIN
 class CCControlButton : public CCControl
 {        
 public:
+	enum EZoomActionType
+	{
+		zoom_action_elastic_out,
+		zoom_action_scale		
+	};
+
     CCControlButton();
     virtual ~CCControlButton();
     virtual void needsLayout(void);
@@ -90,16 +96,22 @@ protected:
 
     CC_PROPERTY(CCPoint, m_labelAnchorPoint, LabelAnchorPoint);
 
+	CC_PROPERTY(EZoomActionType, m_zoomActionType, ZoomActionType);	
+
     /* Override setter to affect a background sprite too */
     virtual GLubyte getOpacity(void);
     virtual void setOpacity(GLubyte var);
 	virtual const ccColor3B& getColor(void);
 	virtual void setColor(const ccColor3B&);
     
+	void setMoveDistance(int nDistance) {m_iMoveDistance = nDistance;};
     /** Flag to know if the button is currently pushed.  */
 protected:
     bool m_isPushed;
     bool m_bParentInited;
+	bool m_bMoved;	//用来防止滚动条 滚动 点击的问题。  这里其实可以自己写控件集成这个控件。 不过这样也要cocosbuilder去修改。  
+
+	int m_iMoveDistance;	//用来防止滚动条 滚动 点击的问题。  这里其实可以自己写控件集成这个控件。 不过这样也要cocosbuilder去修改。  
 public:
     bool isPushed() { return m_isPushed; }
 

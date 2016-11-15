@@ -25,7 +25,7 @@ class CCTexture2DMutable : public cocos2d::CCTexture2D
     CC_PROPERTY(void*, data_, TexData);
     
     
-	unsigned int bytesPerPixel_;
+	unsigned int bitsPerPixel_;
 	bool dirty_;
     
     cocos2d::CCImage *image_;

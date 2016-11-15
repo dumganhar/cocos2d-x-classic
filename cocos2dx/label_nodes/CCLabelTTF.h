@@ -151,6 +151,7 @@ public:
     const char* getFontName();
     void setFontName(const char *fontName);
     
+	virtual void draw(void);
 private:
     bool updateTexture();
 protected:

@@ -26,7 +26,9 @@
 #include "cocoa/CCDictionary.h"
 #include "CCFileUtils.h"
 #include "support/tinyxml2/tinyxml2.h"
+#include "support/ccUtils.h"
 
+#include <algorithm>
 #include <vector> // because its based on windows 8 build :P
 
 NS_CC_BEGIN
@@ -112,17 +114,46 @@ bool CCSAXParser::parse(const char* pXMLData, unsigned int uDataLength)
 	return tinyDoc.Accept( &printer );	
 }
 
-bool CCSAXParser::parse(const char *pszFile)
+bool CCSAXParser::parseEncrypt(const char *pszFile)
+{
+    bool bRet = false;
+    unsigned long size = 0;
+    char* pBuffer = (char*)CCFileUtils::sharedFileUtils()->getFileData(pszFile, "rb", &size);
+
+    if (pBuffer != NULL && size > 0)
+    {
+        int hash = ccHash(ccFileName(pszFile).c_str());
+        for (int i=0; i<(int)size; ++i)
+        {
+            pBuffer[i] = ccBitrand(pBuffer[i]);
+			pBuffer[i] ^= ((hash + size - i) % 256);
+        }
+
+        bRet = parse(pBuffer, size);
+    }
+
+    CC_SAFE_DELETE_ARRAY(pBuffer);
+    return bRet;
+}
+
+bool CCSAXParser::parsePlain(const char *pszFile)
 {
     bool bRet = false;
     unsigned long size = 0;
     char* pBuffer = (char*)CCFileUtils::sharedFileUtils()->getFileData(pszFile, "rt", &size);
+
     if (pBuffer != NULL && size > 0)
     {
         bRet = parse(pBuffer, size);
     }
+
     CC_SAFE_DELETE_ARRAY(pBuffer);
     return bRet;
+}
+
+bool CCSAXParser::parse(const char *pszFile)
+{
+    return parsePlain(pszFile);
 }
 
 void CCSAXParser::startElement(void *ctx, const CC_XML_CHAR *name, const CC_XML_CHAR **atts)

@@ -81,7 +81,8 @@ static void setGLBufferData(void *buf, GLuint bufSize)
     else
     {
         glBindBuffer(GL_ARRAY_BUFFER, s_bufferObject);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, bufSize, buf);
+		glBufferData(GL_ARRAY_BUFFER, bufSize, buf, GL_DYNAMIC_DRAW);
+       // glBufferSubData(GL_ARRAY_BUFFER, 0, bufSize, buf);
     }
 }
 
@@ -122,6 +123,8 @@ void ccDrawPoint( const CCPoint& point )
 {
     lazy_init();
 
+	CCDirector::sharedDirector()->flushDraw();
+
     ccVertex2F p;
     p.x = point.x;
     p.y = point.y;
@@ -148,6 +151,8 @@ void ccDrawPoint( const CCPoint& point )
 void ccDrawPoints( const CCPoint *points, unsigned int numberOfPoints )
 {
     lazy_init();
+
+	CCDirector::sharedDirector()->flushDraw();
 
     ccGLEnableVertexAttribs( kCCVertexAttribFlag_Position );
     s_pShader->use();
@@ -197,6 +202,8 @@ void ccDrawLine( const CCPoint& origin, const CCPoint& destination )
 {
     lazy_init();
 
+	CCDirector::sharedDirector()->flushDraw();
+
     ccVertex2F vertices[2] = {
         {origin.x, origin.y},
         {destination.x, destination.y}
@@ -241,6 +248,8 @@ void ccDrawSolidRect( CCPoint origin, CCPoint destination, ccColor4F color )
 void ccDrawPoly( const CCPoint *poli, unsigned int numberOfPoints, bool closePolygon )
 {
     lazy_init();
+
+	CCDirector::sharedDirector()->flushDraw();
 
     s_pShader->use();
     s_pShader->setUniformsForBuiltins();
@@ -387,6 +396,8 @@ void ccDrawQuadBezier(const CCPoint& origin, const CCPoint& control, const CCPoi
 {
     lazy_init();
 
+	CCDirector::sharedDirector()->flushDraw();
+
     ccVertex2F* vertices = new ccVertex2F[segments + 1];
 
     float t = 0.0f;
@@ -426,6 +437,8 @@ void ccDrawCardinalSpline( CCPointArray *config, float tension,  unsigned int se
 {
     lazy_init();
 
+	CCDirector::sharedDirector()->flushDraw();
+
     ccVertex2F* vertices = new ccVertex2F[segments + 1];
 
     unsigned int p;
@@ -441,7 +454,7 @@ void ccDrawCardinalSpline( CCPointArray *config, float tension,  unsigned int se
             p = config->count() - 1;
             lt = 1;
         } else {
-            p = dt / deltaT;
+            p = (unsigned int)(dt / deltaT);
             lt = (dt - deltaT * (float)p) / deltaT;
         }
 
@@ -477,6 +490,8 @@ void ccDrawCardinalSpline( CCPointArray *config, float tension,  unsigned int se
 void ccDrawCubicBezier(const CCPoint& origin, const CCPoint& control1, const CCPoint& control2, const CCPoint& destination, unsigned int segments)
 {
     lazy_init();
+
+	CCDirector::sharedDirector()->flushDraw();
 
     ccVertex2F* vertices = new ccVertex2F[segments + 1];
 

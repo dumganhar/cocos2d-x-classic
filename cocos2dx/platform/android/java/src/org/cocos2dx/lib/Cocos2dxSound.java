@@ -34,6 +34,7 @@ import android.content.Context;
 import android.media.AudioManager;
 import android.media.SoundPool;
 import android.util.Log;
+import android.os.Vibrator;
 
 public class Cocos2dxSound {
 	// ===========================================================
@@ -63,13 +64,15 @@ public class Cocos2dxSound {
 	private int mStreamIdSyn;
 	private Semaphore mSemaphore;
 
-	private static final int MAX_SIMULTANEOUS_STREAMS_DEFAULT = 5;
+	private static int MAX_SIMULTANEOUS_STREAMS_DEFAULT = 16;
 	private static final float SOUND_RATE = 1.0f;
 	private static final int SOUND_PRIORITY = 1;
 	private static final int SOUND_QUALITY = 5;
 
 	private final static int INVALID_SOUND_ID = -1;
 	private final static int INVALID_STREAM_ID = -1;
+	
+	private static int mIsLoadingSound = 0;
 
 	// ===========================================================
 	// Constructors
@@ -82,11 +85,29 @@ public class Cocos2dxSound {
 	}
 
 	private void initData() {
+		
+		String strDecices = Cocos2dxHelper.getDeviceModel();
+		if( strDecices.compareToIgnoreCase("GT-I9100")==0 ||
+				strDecices.compareToIgnoreCase("GT-I9152") == 0 ||
+				strDecices.compareToIgnoreCase("GT-I9100G") == 0 ||
+				strDecices.compareToIgnoreCase("GT-I9108") == 0)
+		{
+			MAX_SIMULTANEOUS_STREAMS_DEFAULT = 5;
+			Log.e("cocos2d-sound", strDecices+" set pool num:"+MAX_SIMULTANEOUS_STREAMS_DEFAULT);
+		}
+		else
+		{
+			Log.e("cocos2d-sound", strDecices+" set pool num:"+MAX_SIMULTANEOUS_STREAMS_DEFAULT);
+		}
+		
 		this.mSoundPool = new SoundPool(Cocos2dxSound.MAX_SIMULTANEOUS_STREAMS_DEFAULT, AudioManager.STREAM_MUSIC, Cocos2dxSound.SOUND_QUALITY);
-        this.mSoundPool.setOnLoadCompleteListener(new OnLoadCompletedListener());
+        
+		this.mSoundPool.setOnLoadCompleteListener(new OnLoadCompletedListener());
 		
 		this.mLeftVolume = 0.5f;
 		this.mRightVolume = 0.5f;
+		
+		mIsLoadingSound = 0;
 		
 		this.mSemaphore = new Semaphore(0, true);
 	}
@@ -110,9 +131,22 @@ public class Cocos2dxSound {
 			soundID = this.createSoundIDFromAsset(pPath);
 			// save value just in case if file is really loaded
 			if (soundID != Cocos2dxSound.INVALID_SOUND_ID) {
-				this.mPathSoundIDMap.put(pPath, soundID);
+				Log.e("cocos2d-sound", String.format("preloadEffect 1 %s", pPath));
+				try {
+					this.mSemaphore.acquire();
+
+					this.mPathSoundIDMap.put(pPath, soundID);
+
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+					return Cocos2dxSound.INVALID_SOUND_ID;
+				}
+				Log.e("cocos2d-sound", String.format("preloadEffect 2 %s", pPath));
+
 			}
 		}
+		
 
 		return soundID;
 	}
@@ -150,20 +184,30 @@ public class Cocos2dxSound {
 				return Cocos2dxSound.INVALID_SOUND_ID;
 			}
 			
+			//!TODO change preloadEffect to sync mode
+			streamID = this.doPlayEffect(pPath, soundID.intValue(), pLoop);
+			
+			
 			// only allow one playEffect at a time, or the semaphore will not work correctly
-			synchronized(this.mSoundPool) {
-				// add this effect into mEffecToPlayWhenLoadedArray, and it will be played when loaded completely
-				mEffecToPlayWhenLoadedArray.add(new SoundInfoForLoadedCompleted(pPath, soundID.intValue(), pLoop));
-				
-				try {
-					// wait OnloadedCompleteListener to set streamID
-					this.mSemaphore.acquire();
-					
-					streamID = this.mStreamIdSyn;
-				} catch(Exception e) {
-					return Cocos2dxSound.INVALID_SOUND_ID;
-				}
-			}
+//			synchronized(this.mSoundPool) {
+//				// add this effect into mEffecToPlayWhenLoadedArray, and it will be played when loaded completely
+//				mEffecToPlayWhenLoadedArray.add(new SoundInfoForLoadedCompleted(pPath, soundID.intValue(), pLoop));
+//				
+//				try {
+//					
+//					mIsLoadingSound++;
+//					
+//					Log.i("fdf","acquire=============mIsLoadingSound:"+mIsLoadingSound);
+//					// wait OnloadedCompleteListener to set streamID
+//					this.mSemaphore.acquire();
+//					
+//					Log.i("fdf","end=============mIsLoadingSound:"+mIsLoadingSound);
+//					
+//					streamID = this.mStreamIdSyn;
+//				} catch(Exception e) {
+//					return Cocos2dxSound.INVALID_SOUND_ID;
+//				}
+//			}
 		}
 
 		return streamID;
@@ -300,6 +344,25 @@ public class Cocos2dxSound {
 		return streamID;
 	}
 
+	public void vibrate(long time)
+	{
+		Vibrator v = (Vibrator) this.mContext.getSystemService(Context.VIBRATOR_SERVICE);
+		v.vibrate(time);
+	}
+	
+	public void vibrateWithPattern(long[] pattern, int repeat)
+	{
+		Vibrator v = (Vibrator) this.mContext.getSystemService(Context.VIBRATOR_SERVICE);
+		v.vibrate(pattern, repeat);
+	}
+	
+	
+	public void cancelVibrate()
+	{
+		Vibrator v = (Vibrator) this.mContext.getSystemService(Context.VIBRATOR_SERVICE);
+		v.cancel();
+	}
+
 	// ===========================================================
 	// Inner and Anonymous Classes
 	// ===========================================================
@@ -320,26 +383,29 @@ public class Cocos2dxSound {
 
 		@Override
 		public void onLoadComplete(SoundPool soundPool, int sampleId, int status) {
-			if (status == 0)
-			{
-				// only play effect that are in mEffecToPlayWhenLoadedArray
-				for ( SoundInfoForLoadedCompleted info : mEffecToPlayWhenLoadedArray) {
-					if (sampleId == info.soundID) {
-						// set the stream id which will be returned by playEffect()
-						mStreamIdSyn = doPlayEffect(info.path, info.soundID, info.isLoop);
-						
-						// remove it from array, because we will break here
-						// so it is safe to do
-						mEffecToPlayWhenLoadedArray.remove(info);
-
-						break;
-					}
-				}
-			} else {
-				mStreamIdSyn = Cocos2dxSound.INVALID_SOUND_ID;
-			}
-			
+//			if (status == 0)
+//			{
+//				// only play effect that are in mEffecToPlayWhenLoadedArray
+//				for ( SoundInfoForLoadedCompleted info : mEffecToPlayWhenLoadedArray) {
+//					if (sampleId == info.soundID) {
+//						// set the stream id which will be returned by playEffect()
+//						mStreamIdSyn = doPlayEffect(info.path, info.soundID, info.isLoop);
+//						
+//						// remove it from array, because we will break here
+//						// so it is safe to do
+//						mEffecToPlayWhenLoadedArray.remove(info);
+//
+//						break;
+//					}
+//				}
+//			} else {
+//				mStreamIdSyn = Cocos2dxSound.INVALID_SOUND_ID;
+//			}
+//			
+			Log.e("cocos2d-sound", String.format("OnLoadCompletedListener %d", sampleId));
+				
 			mSemaphore.release();
+				
 		}
 	}
 }

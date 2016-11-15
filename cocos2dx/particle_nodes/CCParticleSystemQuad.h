@@ -99,6 +99,10 @@ public:
     /** listen the event that coming to foreground on Android
      */
     void listenBackToForeground(CCObject *obj);
+	//设置延迟时间
+    void setDelayTime(float fTime);
+	//延迟结束事件
+	void delayTimeComplete(float fTime);
 
     static CCParticleSystemQuad * create();
     static CCParticleSystemQuad * createWithTotalParticles(unsigned int numberOfParticles);

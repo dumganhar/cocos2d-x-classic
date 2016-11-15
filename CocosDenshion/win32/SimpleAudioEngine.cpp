@@ -252,6 +252,19 @@ void SimpleAudioEngine::setEffectsVolume(float volume)
 {
 }
 
+void SimpleAudioEngine::vibrate(long time)
+{
+
+}
+void SimpleAudioEngine::vibrateWithPattern(long pattern[], int repeat)
+{
+
+}
+void SimpleAudioEngine::cancelVibrate()
+{
+
+}
+
 //////////////////////////////////////////////////////////////////////////
 // static function
 //////////////////////////////////////////////////////////////////////////

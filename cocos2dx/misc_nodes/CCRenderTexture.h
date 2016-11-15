@@ -84,6 +84,8 @@ public:
     /** starts grabbing */
     void begin();
 
+    void beginWithSize(CCSize frameSize);
+
     /** starts rendering to the texture while clearing the texture first.
     This is more efficient then calling -clear first and then -begin */
     void beginWithClear(float r, float g, float b, float a);

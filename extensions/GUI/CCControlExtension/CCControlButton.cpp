@@ -57,6 +57,7 @@ CCControlButton::CCControlButton()
 , m_backgroundSpriteDispatchTable(NULL)
 , m_marginV(CCControlButtonMarginTB)
 , m_marginH(CCControlButtonMarginLR)
+, m_zoomActionType(zoom_action_elastic_out)
 {
 
 }
@@ -222,10 +223,37 @@ void CCControlButton::setHighlighted(bool enabled)
     needsLayout();
     if( m_zoomOnTouchDown )
     {
-        float scaleValue = (isHighlighted() && isEnabled() && !isSelected()) ? 1.1f : 1.0f;
-        CCAction *zoomAction = CCScaleTo::create(0.05f, scaleValue);
-        zoomAction->setTag(kZoomActionTag);
-        runAction(zoomAction);
+		
+		if (m_zoomActionType == zoom_action_elastic_out)
+		{
+			if (isHighlighted() && isEnabled() && !isSelected())
+			{
+				CCAction *zoomAction = CCScaleTo::create(0.05f, 0.8f);
+				zoomAction->setTag(kZoomActionTag);
+				runAction(zoomAction);
+			}
+			else
+			{
+				CCAction* zoomAction = CCScaleTo::create(0.45f, 1.0f);
+				CCActionInterval* easeElasticOut = CCEaseElasticOut::create((CCActionInterval*)(zoomAction->copy()->autorelease()), 0.45f);
+				easeElasticOut->setTag(kZoomActionTag);
+				runAction(easeElasticOut);
+			}
+		}
+		else if (m_zoomActionType == zoom_action_scale)
+		{
+			float scaleValue = (isHighlighted() && isEnabled() && !isSelected()) ? 0.9f : 1.0f;
+			CCAction* zoomAction = CCScaleTo::create(0.05f, scaleValue);
+			zoomAction->setTag(kZoomActionTag);
+			runAction(zoomAction);
+		}
+		else
+		{
+			float scaleValue = (isHighlighted() && isEnabled() && !isSelected()) ? 1.1f : 1.0f;
+			CCAction* zoomAction = CCScaleTo::create(0.05f, scaleValue);
+			zoomAction->setTag(kZoomActionTag);
+			runAction(zoomAction);
+		}
     }
 }
 
@@ -288,6 +316,16 @@ void CCControlButton::setLabelAnchorPoint(CCPoint labelAnchorPoint)
     {
         this->m_titleLabel->setAnchorPoint(labelAnchorPoint);
     }
+}
+
+CCControlButton::EZoomActionType CCControlButton::getZoomActionType()
+{
+	return m_zoomActionType;
+}
+
+void CCControlButton::setZoomActionType(CCControlButton::EZoomActionType actionType)
+{
+	m_zoomActionType = actionType;
 }
 
 CCString* CCControlButton::getTitleForState(CCControlState state)
@@ -645,6 +683,7 @@ bool CCControlButton::ccTouchBegan(CCTouch *pTouch, CCEvent *pEvent)
             return false;
         }
     }
+
     
     m_isPushed = true;
     this->setHighlighted(true);
@@ -653,7 +692,7 @@ bool CCControlButton::ccTouchBegan(CCTouch *pTouch, CCEvent *pEvent)
 }
 
 void CCControlButton::ccTouchMoved(CCTouch *pTouch, CCEvent *pEvent)
-{    
+{
     if (!isEnabled() || !isPushed() || isSelected())
     {
         if (isHighlighted())
@@ -661,8 +700,9 @@ void CCControlButton::ccTouchMoved(CCTouch *pTouch, CCEvent *pEvent)
             setHighlighted(false);
         }
         return;
-    }
-    
+    }    
+	
+
     bool isTouchMoveInside = isTouchInside(pTouch);
     if (isTouchMoveInside && !isHighlighted())
     {
@@ -689,14 +729,34 @@ void CCControlButton::ccTouchEnded(CCTouch *pTouch, CCEvent *pEvent)
     m_isPushed = false;
     setHighlighted(false);
     
+	/*
+    // add by ediwin, 2013-11/14, for button in scroll view
+    #define MOVE_THRESHOLD 40
+    int len = sqrt( (pTouch->getLocation().x - pTouch->getStartLocation().x) * (pTouch->getLocation().x - pTouch->getStartLocation().x) + (pTouch->getLocation().y - pTouch->getStartLocation().y) * (pTouch->getLocation().y - pTouch->getStartLocation().y) );
+    bool isScrollEnd = false;
+    if ( len > MOVE_THRESHOLD)
+        isScrollEnd = true;
+    CCLOG("isMoveEnd len=%d \n", len);
+    // end by ediwin, 2013-11/14, for button in scroll view
+	*/
+
+	bool bScrollLock = false;
+	CCTouchDispatcher* pTouchDispatcher = CCDirector::sharedDirector()->getTouchDispatcher();
+	if (NULL != pTouchDispatcher)
+	{
+		bScrollLock = pTouchDispatcher->isScrollLock();
+	}
+	
     
     if (isTouchInside(pTouch))
     {
-        sendActionsForControlEvents(CCControlEventTouchUpInside);        
+        if ( !bScrollLock )
+            sendActionsForControlEvents(CCControlEventTouchUpInside);        
     }
     else
     {
-        sendActionsForControlEvents(CCControlEventTouchUpOutside);        
+        if ( !bScrollLock )
+            sendActionsForControlEvents(CCControlEventTouchUpOutside);
     }
 }
 

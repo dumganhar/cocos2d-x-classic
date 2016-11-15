@@ -93,6 +93,7 @@ void CCBatchNode::visit()
 
 void CCBatchNode::draw()
 {
+	CCDirector::sharedDirector()->flushDraw();
     CC_NODE_DRAW_SETUP();
     CCObject *object = NULL;
     CCARRAY_FOREACH(m_pChildren, object)

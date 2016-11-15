@@ -40,6 +40,7 @@ THE SOFTWARE.
 #include "effects/CCGrid.h"
 // extern
 #include "kazmath/GL/matrix.h"
+#include "support/CCProfiling.h"
 
 NS_CC_BEGIN
 
@@ -190,7 +191,7 @@ int CCRenderTexture::getClearStencil() const
 
 void CCRenderTexture::setClearStencil(float fClearStencil)
 {
-    m_nClearStencil = fClearStencil;
+    m_nClearStencil = (GLint)fClearStencil;
 }
 
 bool CCRenderTexture::isAutoDraw() const
@@ -253,6 +254,7 @@ bool CCRenderTexture::initWithWidthAndHeight(int w, int h, CCTexture2DPixelForma
 
     bool bRet = false;
     void *data = NULL;
+    unsigned int dataLen = 0;
     do 
     {
         w = (int)(w * CC_CONTENT_SCALE_FACTOR());
@@ -275,16 +277,17 @@ bool CCRenderTexture::initWithWidthAndHeight(int w, int h, CCTexture2DPixelForma
             powH = ccNextPOT(h);
         }
 
-        data = malloc((int)(powW * powH * 4));
+        dataLen = powW * powH * 4;
+        data = malloc(dataLen);
         CC_BREAK_IF(! data);
 
-        memset(data, 0, (int)(powW * powH * 4));
+        memset(data, 0, dataLen);
         m_ePixelFormat = eFormat;
 
         m_pTexture = new CCTexture2D();
         if (m_pTexture)
         {
-            m_pTexture->initWithData(data, (CCTexture2DPixelFormat)m_ePixelFormat, powW, powH, CCSizeMake((float)w, (float)h));
+            m_pTexture->initWithData(data, dataLen, (CCTexture2DPixelFormat)m_ePixelFormat, powW, powH, CCSizeMake((float)w, (float)h));
         }
         else
         {
@@ -298,7 +301,7 @@ bool CCRenderTexture::initWithWidthAndHeight(int w, int h, CCTexture2DPixelForma
             m_pTextureCopy = new CCTexture2D();
             if (m_pTextureCopy)
             {
-                m_pTextureCopy->initWithData(data, (CCTexture2DPixelFormat)m_ePixelFormat, powW, powH, CCSizeMake((float)w, (float)h));
+                m_pTextureCopy->initWithData(data, dataLen, (CCTexture2DPixelFormat)m_ePixelFormat, powW, powH, CCSizeMake((float)w, (float)h));
             }
             else
             {
@@ -361,6 +364,8 @@ bool CCRenderTexture::initWithWidthAndHeight(int w, int h, CCTexture2DPixelForma
 
 void CCRenderTexture::begin()
 {
+	CCDirector::sharedDirector()->flushDraw();
+
     kmGLMatrixMode(KM_GL_PROJECTION);
 	kmGLPushMatrix();
 	kmGLMatrixMode(KM_GL_MODELVIEW);
@@ -373,6 +378,49 @@ void CCRenderTexture::begin()
 
     // Calculate the adjustment ratios based on the old and new projections
     CCSize size = director->getWinSizeInPixels();
+    float widthRatio = size.width / texSize.width;
+    float heightRatio = size.height / texSize.height;
+
+    // Adjust the orthographic projection and viewport
+    glViewport(0, 0, (GLsizei)texSize.width, (GLsizei)texSize.height);
+
+
+    kmMat4 orthoMatrix;
+    kmMat4OrthographicProjection(&orthoMatrix, (float)-1.0 / widthRatio,  (float)1.0 / widthRatio,
+        (float)-1.0 / heightRatio, (float)1.0 / heightRatio, -1,1 );
+    kmGLMultMatrix(&orthoMatrix);
+
+    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &m_nOldFBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, m_uFBO);
+    
+    /*  Certain Qualcomm Andreno gpu's will retain data in memory after a frame buffer switch which corrupts the render to the texture. The solution is to clear the frame buffer before rendering to the texture. However, calling glClear has the unintended result of clearing the current texture. Create a temporary texture to overcome this. At the end of CCRenderTexture::begin(), switch the attached texture to the second one, call glClear, and then switch back to the original texture. This solution is unnecessary for other devices as they don't have the same issue with switching frame buffers.
+     */
+    if (CCConfiguration::sharedConfiguration()->checkForGLExtension("GL_QCOM"))
+    {
+        // -- bind a temporary texture so we can clear the render buffer without losing our texture
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_pTextureCopy->getName(), 0);
+        CHECK_GL_ERROR_DEBUG();
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_pTexture->getName(), 0);
+    }
+}
+
+void CCRenderTexture::beginWithSize(CCSize frameSize)
+{
+	CCDirector::sharedDirector()->flushDraw();
+
+    kmGLMatrixMode(KM_GL_PROJECTION);
+	kmGLPushMatrix();
+	kmGLMatrixMode(KM_GL_MODELVIEW);
+    kmGLPushMatrix();
+    
+    CCDirector *director = CCDirector::sharedDirector();
+    director->setProjection(director->getProjection());
+
+    const CCSize& texSize = m_pTexture->getContentSizeInPixels();
+
+    // Calculate the adjustment ratios based on the old and new projections
+    CCSize size = frameSize;//director->getWinSizeInPixels();
     float widthRatio = size.width / texSize.width;
     float heightRatio = size.height / texSize.height;
 
@@ -461,6 +509,8 @@ void CCRenderTexture::beginWithClear(float r, float g, float b, float a, float d
 
 void CCRenderTexture::end()
 {
+	CCDirector::sharedDirector()->flushDraw();
+
     CCDirector *director = CCDirector::sharedDirector();
     
     glBindFramebuffer(GL_FRAMEBUFFER, m_nOldFBO);
@@ -483,6 +533,7 @@ void CCRenderTexture::clear(float r, float g, float b, float a)
 void CCRenderTexture::clearDepth(float depthValue)
 {
     this->begin();
+
     //! save old depth value
     GLfloat depthClearValue;
     glGetFloatv(GL_DEPTH_CLEAR_VALUE, &depthClearValue);
@@ -516,6 +567,8 @@ void CCRenderTexture::visit()
     {
         return;
     }
+
+	CCDirector::sharedDirector()->flushDraw();
 	
 	kmGLPushMatrix();
 	
@@ -541,6 +594,7 @@ void CCRenderTexture::visit()
 
 void CCRenderTexture::draw()
 {
+	CC_PROFILER_HELPER;
     if( m_bAutoDraw)
     {
         begin();

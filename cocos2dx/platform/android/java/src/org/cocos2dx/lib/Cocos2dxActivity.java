@@ -30,7 +30,9 @@ import android.content.Context;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Message;
+import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.util.Log;
 import android.widget.FrameLayout;
 
@@ -48,6 +50,7 @@ public abstract class Cocos2dxActivity extends Activity implements Cocos2dxHelpe
 	private Cocos2dxGLSurfaceView mGLSurfaceView;
 	private Cocos2dxHandler mHandler;
 	private static Context sContext = null;
+	private static FrameLayout sRootLayout = null;
 	
 	public static Context getContext() {
 		return sContext;
@@ -111,6 +114,12 @@ public abstract class Cocos2dxActivity extends Activity implements Cocos2dxHelpe
 
 	@Override
 	public void showEditTextDialog(final String pTitle, final String pContent, final int pInputMode, final int pInputFlag, final int pReturnType, final int pMaxLength) { 
+		
+		if(this.isFinishing() || !this.isTaskRoot())
+		{
+			return;
+		}
+		
 		Message msg = new Message();
 		msg.what = Cocos2dxHandler.HANDLER_SHOW_EDITBOX_DIALOG;
 		msg.obj = new Cocos2dxHandler.EditBoxMessage(pTitle, pContent, pInputMode, pInputFlag, pReturnType, pMaxLength);
@@ -133,6 +142,7 @@ public abstract class Cocos2dxActivity extends Activity implements Cocos2dxHelpe
                                        ViewGroup.LayoutParams.FILL_PARENT);
         FrameLayout framelayout = new FrameLayout(this);
         framelayout.setLayoutParams(framelayout_params);
+        sRootLayout = framelayout;
 
         // Cocos2dxEditText layout
         ViewGroup.LayoutParams edittext_layout_params =
@@ -149,6 +159,40 @@ public abstract class Cocos2dxActivity extends Activity implements Cocos2dxHelpe
 
         // ...add to FrameLayout
         framelayout.addView(this.mGLSurfaceView);
+        
+
+         
+        //给该layout设置监听，监听其布局发生变化事件
+        framelayout.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener(){
+        	@Override
+            public void onGlobalLayout(){
+         
+               //比较Activity根布局与当前布局的大小                                
+//                Log.e("cocos2d-java", String.format("onGlobalLayout sRootLayout(x,y,w,h)=(%d,%d,%d,%d)",
+//                		sRootLayout.getLeft(), sRootLayout.getBottom(), sRootLayout.getWidth(), sRootLayout.getHeight()));
+//                
+//                Log.e("cocos2d-java", String.format("onGlobalLayout sRootLayout.getRootView()(x,y,w,h)=(%d,%d,%d,%d)",
+//                		sRootLayout.getRootView().getLeft(), sRootLayout.getRootView().getBottom(),
+//                		sRootLayout.getRootView().getWidth(), sRootLayout.getRootView().getHeight()));
+             }
+        });
+        
+        framelayout.getViewTreeObserver().addOnScrollChangedListener(new ViewTreeObserver.OnScrollChangedListener() {
+			
+			@Override
+			public void onScrollChanged() {
+				// TODO Auto-generated method stub			
+				
+//                Log.e("cocos2d-java", String.format("onScrollChanged sRootLayout(x,y,w,h)=(%d,%d,%d,%d)",
+//                		sRootLayout.getLeft(), sRootLayout.getBottom(), sRootLayout.getWidth(), sRootLayout.getHeight()));
+//                
+//                Log.e("cocos2d-java", String.format("onScrollChanged sRootLayout.getRootView()(x,y,w,h)=(%d,%d,%d,%d)",
+//                		sRootLayout.getRootView().getLeft(), sRootLayout.getRootView().getBottom(),
+//                		sRootLayout.getRootView().getWidth(), sRootLayout.getRootView().getHeight()));
+                
+			}
+		});
+        
 
         // Switch to supported OpenGL (ARGB888) mode on emulator
         if (isAndroidEmulator())

@@ -137,6 +137,7 @@ bool CCLabelTTF::initWithString(const char *string, const char *fontName, float 
         m_tDimensions = CCSizeMake(dimensions.width, dimensions.height);
         m_hAlignment  = hAlignment;
         m_vAlignment  = vAlignment;
+		CC_SAFE_DELETE(m_pFontName);
         m_pFontName   = new std::string(fontName);
         m_fFontSize   = fontSize;
         
@@ -169,7 +170,6 @@ bool CCLabelTTF::initWithStringAndTextDefinition(const char *string, ccFontDefin
         return false;
     }
 }
-
 
 void CCLabelTTF::setString(const char *string)
 {
@@ -241,7 +241,6 @@ void CCLabelTTF::setDimensions(const CCSize &dim)
     if (dim.width != m_tDimensions.width || dim.height != m_tDimensions.height)
     {
         m_tDimensions = dim;
-        
         // Force update
         if (m_string.size() > 0)
         {
@@ -367,7 +366,7 @@ void CCLabelTTF::enableShadow(const CCSize &shadowOffset, float shadowOpacity, f
         }
     
     #else
-        CCLOGERROR("Currently only supported on iOS and Android!");
+        //CCLOGERROR("Currently only supported on iOS and Android!");
     #endif
     
 }
@@ -386,7 +385,7 @@ void CCLabelTTF::disableShadow(bool updateTexture)
         }
     
     #else
-        CCLOGERROR("Currently only supported on iOS and Android!");
+        //CCLOGERROR("Currently only supported on iOS and Android!");
     #endif
 }
 
@@ -420,7 +419,7 @@ void CCLabelTTF::enableStroke(const ccColor3B &strokeColor, float strokeSize, bo
         }
     
     #else
-        CCLOGERROR("Currently only supported on iOS and Android!");
+        //CCLOGERROR("Currently only supported on iOS and Android!");
     #endif
     
 }
@@ -438,7 +437,7 @@ void CCLabelTTF::disableStroke(bool updateTexture)
         }
     
     #else
-        CCLOGERROR("Currently only supported on iOS and Android!");
+        //CCLOGERROR("Currently only supported on iOS and Android!");
     #endif
     
 }
@@ -454,7 +453,7 @@ void CCLabelTTF::setFontFillColor(const ccColor3B &tintColor, bool updateTexture
                 this->updateTexture();
         }
     #else
-        CCLOGERROR("Currently only supported on iOS and Android!");
+        //CCLOGERROR("Currently only supported on iOS and Android!");
     #endif
 }
 
@@ -479,8 +478,9 @@ void CCLabelTTF::_updateWithTextDefinition(ccFontDefinition & textDefinition, bo
     m_hAlignment  = textDefinition.m_alignment;
     m_vAlignment  = textDefinition.m_vertAlignment;
     
+	CC_SAFE_DELETE(m_pFontName);
     m_pFontName   = new std::string(textDefinition.m_fontName);
-    m_fFontSize   = textDefinition.m_fontSize;
+    m_fFontSize   = (float)textDefinition.m_fontSize;
     
     
     // shadow
@@ -507,9 +507,9 @@ ccFontDefinition CCLabelTTF::_prepareTextDefinition(bool adjustForResolution)
     ccFontDefinition texDef;
     
     if (adjustForResolution)
-        texDef.m_fontSize       =  m_fFontSize * CC_CONTENT_SCALE_FACTOR();
+        texDef.m_fontSize       =  (int)(m_fFontSize * CC_CONTENT_SCALE_FACTOR());
     else
-        texDef.m_fontSize       =  m_fFontSize;
+        texDef.m_fontSize       =  (int)(m_fFontSize);
     
     texDef.m_fontName       = *m_pFontName;
     texDef.m_alignment      =  m_hAlignment;
@@ -563,5 +563,18 @@ ccFontDefinition CCLabelTTF::_prepareTextDefinition(bool adjustForResolution)
     
     return texDef;
 }
+
+void CCLabelTTF::draw( void )
+{
+	if (m_string.empty())
+	{
+		return;
+	}
+	
+	CCSprite::draw();
+
+	CCDirector::sharedDirector()->flushDraw();
+}
+
 
 NS_CC_END

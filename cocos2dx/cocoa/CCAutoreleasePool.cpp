@@ -23,6 +23,7 @@ THE SOFTWARE.
 ****************************************************************************/
 #include "CCAutoreleasePool.h"
 #include "ccMacros.h"
+#include "support/CCProfiling.h"
 
 NS_CC_BEGIN
 
@@ -151,6 +152,7 @@ void CCPoolManager::push()
 
 void CCPoolManager::pop()
 {
+	CC_PROFILER_HELPER;
     if (! m_pCurReleasePool)
     {
         return;

@@ -92,6 +92,15 @@ public:
     { 
         m_bStartingPositionInitialized = bStartingPositionInitialized; 
     }
+
+	
+	ccVertex2F* getVectices() {return m_pVertices;};
+	unsigned int getMaxVecticesCount() {return m_uMaxPoints;};
+
+	void setStreakScaleX(float fScaleX);
+	void setStreakScaleY(float fScaleY);
+	void setJudegeValid(bool bJudgeValid) { m_bJudgeValid = bJudgeValid; }
+
 protected:
     bool m_bFastMode;
     bool m_bStartingPositionInitialized;
@@ -105,6 +114,9 @@ private:
     float m_fFadeDelta;
     float m_fMinSeg;
 
+	float m_fOriginalStroke;
+	float m_fOriginalFadeDelta;
+
     unsigned int m_uMaxPoints;
     unsigned int m_uNuPoints;
     unsigned int m_uPreviousNuPoints;
@@ -117,6 +129,9 @@ private:
     ccVertex2F* m_pVertices;
     GLubyte* m_pColorPointer;
     ccTex2F* m_pTexCoords;
+
+	//顶点修正会导致断裂，增加配置不进行顶点修正 by flywu
+	bool m_bJudgeValid;
 };
 
 // end of misc_nodes group

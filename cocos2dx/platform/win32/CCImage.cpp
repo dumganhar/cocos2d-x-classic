@@ -203,7 +203,7 @@ public:
             if (nWidthLimit > 0)
             {
                 rc.right = nWidthLimit;
-                dwCalcFmt |= DT_WORDBREAK
+                dwCalcFmt |= DT_WORDBREAK|DT_EDITCONTROL
                     | (dwFmt & DT_CENTER)
                     | (dwFmt & DT_RIGHT);
             }
@@ -248,7 +248,7 @@ public:
         {
             CC_BREAK_IF(! pszText);
 
-            DWORD dwFmt = DT_WORDBREAK;
+            DWORD dwFmt = DT_WORDBREAK|DT_EDITCONTROL;
             DWORD dwHoriFlag = eAlign & 0x0f;
             DWORD dwVertFlag = (eAlign & 0xf0) >> 4;
 
@@ -432,6 +432,9 @@ bool CCImage::initWithString(
         bRet = true;
     } while (0);
 
+#if CC_TARGET_PLATFORM == CC_PLATFORM_WIN32
+	m_name = pText;
+#endif
     return bRet;
 }
 

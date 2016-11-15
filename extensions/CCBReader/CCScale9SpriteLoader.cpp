@@ -17,7 +17,12 @@ NS_CC_EXT_BEGIN
 
 void CCScale9SpriteLoader::onHandlePropTypeSpriteFrame(CCNode * pNode, CCNode * pParent, const char * pPropertyName, CCSpriteFrame * pCCSpriteFrame, CCBReader * pCCBReader) {
     if(strcmp(pPropertyName, PROPERTY_SPRITEFRAME) == 0) {
-        ((CCScale9Sprite *)pNode)->setSpriteFrame(pCCSpriteFrame);
+		if(pCCSpriteFrame != NULL) {
+			((CCScale9Sprite *)pNode)->setSpriteFrame(pCCSpriteFrame);
+		} else {
+			CCLOG("ERROR: CCScale9SpriteLoader::onHandlePropTypeSpriteFrame SpriteFrame NULL");
+		}
+        
     } else {
         CCNodeLoader::onHandlePropTypeSpriteFrame(pNode, pParent, pPropertyName, pCCSpriteFrame, pCCBReader);
     }

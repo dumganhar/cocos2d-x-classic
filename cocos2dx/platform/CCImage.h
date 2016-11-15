@@ -26,6 +26,8 @@ THE SOFTWARE.
 #define __CC_IMAGE_H__
 
 #include "cocoa/CCObject.h"
+#include "textures/CCTexture2D.h"
+#include "textures/CCPVRParzer.h"
 
 NS_CC_BEGIN
 
@@ -46,6 +48,7 @@ public:
         kFmtPng,
         kFmtTiff,
         kFmtWebp,
+        kFmtPvr,
         kFmtRawData,
         kFmtUnKnown
     }EImageFormat;
@@ -145,9 +148,15 @@ public:
     int               getDataLen()            { return m_nWidth * m_nHeight; }
 
 
-    bool hasAlpha()                     { return m_bHasAlpha;   }
-    bool isPremultipliedAlpha()         { return m_bPreMulti;   }
-
+    bool                   hasAlpha()                   { return m_bHasAlpha;   }
+    bool                   isPremultipliedAlpha()       { return m_bPreMulti;   }
+    unsigned int           getNumberOfMipmaps()         { return m_uNumberOfMipmaps; }
+    CCPVRMipmap*           getMipmaps()                 { return m_asMipmaps; }
+    GLenum                 getInternalFormat()          { return m_eInternalFormat; }
+    GLenum                 getPixelDataFormat()         { return m_ePixelDataformat; }
+    GLenum                 getPixelDataType()           { return m_ePixelDataType; }
+    CCTexture2DPixelFormat getFormat()                  { return m_eCCFormat; }
+    bool                   isCompressed()               { return m_bCompressed; }
 
     /**
     @brief    Save CCImage data to the specified file, with specified format.
@@ -155,6 +164,9 @@ public:
     @param    bIsToRGB        whether the image is saved as RGB format.
     */
     bool saveToFile(const char *pszFilePath, bool bIsToRGB = true);
+
+    void setFileName(std::string name){m_name = name;}
+    std::string getFileName(){return m_name;}
 
     CC_SYNTHESIZE_READONLY(unsigned short,   m_nWidth,       Width);
     CC_SYNTHESIZE_READONLY(unsigned short,   m_nHeight,      Height);
@@ -165,6 +177,7 @@ protected:
     bool _initWithPngData(void *pData, int nDatalen);
     bool _initWithTiffData(void *pData, int nDataLen);
     bool _initWithWebpData(void *pData, int nDataLen);
+    bool _initWithPvrData(void *pData, int nDataLen);
     // @warning kFmtRawData only support RGBA8888
     bool _initWithRawData(void *pData, int nDatalen, int nWidth, int nHeight, int nBitsPerComponent, bool bPreMulti);
 
@@ -174,8 +187,15 @@ protected:
     unsigned char *m_pData;
     bool m_bHasAlpha;
     bool m_bPreMulti;
+    struct CCPVRMipmap m_asMipmaps[CC_PVRMIPMAP_MAX];   // pointer to mipmap images
+    unsigned int m_uNumberOfMipmaps;                    // number of mipmap used
+    GLenum m_eInternalFormat;
+    GLenum m_ePixelDataformat;
+    GLenum m_ePixelDataType;
+    CCTexture2DPixelFormat m_eCCFormat;
+    bool m_bCompressed;
 
-
+    std::string m_name;
 private:
     // noncopyable
     CCImage(const CCImage&    rImg);

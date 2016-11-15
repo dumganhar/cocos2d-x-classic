@@ -129,6 +129,7 @@ CCSpriteBatchNode::~CCSpriteBatchNode()
 // don't call visit on it's children
 void CCSpriteBatchNode::visit(void)
 {
+	CC_PROFILER_HELPER;
     CC_PROFILER_START_CATEGORY(kCCProfilerCategoryBatchSprite, "CCSpriteBatchNode - visit");
 
     // CAREFUL:
@@ -170,11 +171,15 @@ void CCSpriteBatchNode::visit(void)
 
 void CCSpriteBatchNode::addChild(CCNode *child, int zOrder, int tag)
 {
+	CC_PROFILER_HELPER;
     CCAssert(child != NULL, "child should not be null");
     CCAssert(dynamic_cast<CCSprite*>(child) != NULL, "CCSpriteBatchNode only supports CCSprites as children");
     CCSprite *pSprite = (CCSprite*)(child);
     // check CCSprite is using the same texture id
-    CCAssert(pSprite->getTexture()->getName() == m_pobTextureAtlas->getTexture()->getName(), "CCSprite is not using the same texture id");
+    if (pSprite && pSprite->getTexture() && m_pobTextureAtlas && m_pobTextureAtlas->getTexture())
+    {
+        CCAssert(pSprite->getTexture()->getName() == m_pobTextureAtlas->getTexture()->getName(), "CCSprite is not using the same texture id");
+    }
 
     CCNode::addChild(child, zOrder, tag);
 
@@ -209,6 +214,7 @@ void CCSpriteBatchNode::reorderChild(CCNode *child, int zOrder)
 // override remove child
 void CCSpriteBatchNode::removeChild(CCNode *child, bool cleanup)
 {
+	CC_PROFILER_HELPER;
     CCSprite *pSprite = (CCSprite*)(child);
 
     // explicit null handling
@@ -245,6 +251,7 @@ void CCSpriteBatchNode::removeAllChildrenWithCleanup(bool bCleanup)
 //override sortAllChildren
 void CCSpriteBatchNode::sortAllChildren()
 {
+	CC_PROFILER_HELPER;
     if (m_bReorderChildDirty)
     {
         int i = 0,j = 0,length = m_pChildren->data->num;
@@ -387,6 +394,7 @@ void CCSpriteBatchNode::reorderBatch(bool reorder)
 // draw
 void CCSpriteBatchNode::draw(void)
 {
+	CC_PROFILER_HELPER;
     CC_PROFILER_START("CCSpriteBatchNode - draw");
 
     // Optimization: Fast Dispatch
@@ -395,6 +403,7 @@ void CCSpriteBatchNode::draw(void)
         return;
     }
 
+	CCDirector::sharedDirector()->flushDraw();
     CC_NODE_DRAW_SETUP();
 
     arrayMakeObjectsPerformSelector(m_pChildren, updateTransform, CCSprite*);

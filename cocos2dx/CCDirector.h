@@ -27,6 +27,11 @@ THE SOFTWARE.
 #ifndef __CCDIRECTOR_H__
 #define __CCDIRECTOR_H__
 
+//////////////////////////
+// add by camel
+#include <vector>
+//////////////////////////
+
 #include "platform/CCPlatformMacros.h"
 #include "cocoa/CCObject.h"
 #include "ccTypes.h"
@@ -36,7 +41,6 @@ THE SOFTWARE.
 #include "kazmath/mat4.h"
 #include "label_nodes/CCLabelAtlas.h"
 #include "ccTypeInfo.h"
-
 
 NS_CC_BEGIN
 
@@ -73,6 +77,43 @@ class CCActionManager;
 class CCTouchDispatcher;
 class CCKeypadDispatcher;
 class CCAccelerometer;
+
+///////////////////////////////////////////////////////////////////
+// add by camel
+class CCDrawSceneListener
+{
+public:
+	virtual void beforeDrawScene(float fDelta) = 0;
+	virtual void afterDrawScene(float fDelta) = 0;
+
+
+	// 用于主循环插帧回调，普通业务逻辑慎用此回调 [10/17/2014 gusterzhai]
+	virtual void onMainLoopEnd() = 0;
+};
+
+typedef std::vector<CCDrawSceneListener*> VECCCDRAWSCENELISTENER;
+///////////////////////////////////////////////////////////////////
+
+// add by Jamesgu
+class CCBrowserEventListener
+{
+public:
+	enum
+	{
+		CCE_MSG_WEBKITERROR					= 0,				// 发生错误
+		CCE_MSG_STARTOPENURL,									// 准备打开URL
+		CCE_MSG_RECEIVETITLE,										// 收到title标题
+		CCE_MSG_LOADINGURL,										// 开始加载URL
+		CCE_MSG_OPENURLCOMPLETED,							// 打开URL完成
+		
+	};
+public:
+    virtual ~ CCBrowserEventListener(){}
+    
+public:
+    virtual int onEvent_willOpen(const char * szURL) = 0;
+	virtual int onEvent_BrowserMessage(int nMsgID, const char  * pMessage) = 0;
+};
 
 /**
 @brief Class that creates and handle the main Window and manages how
@@ -141,6 +182,9 @@ public:
      */
     inline ccDirectorProjection getProjection(void) { return m_eProjection; }
     void setProjection(ccDirectorProjection kProjection);
+
+     /** reshape projection matrix when canvas has been change"*/
+    void reshapeProjection(const CCSize& newWindowSize);
     
     /** Sets the glViewport*/
     void setViewport();
@@ -261,6 +305,10 @@ public:
      */
     void resume(void);
 
+	virtual void startRender(void) = 0;
+	virtual void stopRender(void) = 0;
+	virtual bool isRendering(void) const = 0;
+
     /** Stops the animation. Nothing will be drawn. The main loop won't be triggered anymore.
      If you don't want to pause your animation call [pause] instead.
      */
@@ -276,6 +324,11 @@ public:
     This method is called every frame. Don't call it manually.
     */
     void drawScene(void);
+
+	// 仅用于插帧 [10/17/2014 gusterzhai]
+	void drawSceneForAddFrame(float delta);
+
+	void drawSceneImpl();
 
     // Memory Helper
 
@@ -301,6 +354,9 @@ public:
 
     virtual void mainLoop(void) = 0;
 
+	// 仅用于插帧 [10/17/2014 gusterzhai]
+	virtual void mainLoopForAddFrame(float delta);
+
     /** The size in pixels of the surface. It could be different than the screen size.
     High-res devices might have a higher surface size than the screen size.
     Only available when compiled using SDK >= 4.0.
@@ -309,7 +365,12 @@ public:
     void setContentScaleFactor(float scaleFactor);
     float getContentScaleFactor(void);
 
-    /**
+	void enableAutoBatch(bool bEnable){m_bAutoBatch = bEnable;}
+	bool isEnableAutoBatch();
+
+	void flushDraw();
+    
+       /**
      *  Gets Frame Rate.
      * @js NA
      */
@@ -347,10 +408,59 @@ public:
 
     /* delta time since last tick to main loop */
 	CC_PROPERTY_READONLY(float, m_fDeltaTime, DeltaTime);
-	
+
+
+	/** CCScheduler associated with this director
+     @since v2.0
+     */
+    CC_PROPERTY(CCScheduler*, m_pSceneSlowScheduler, SlowScheduler);
+
+    /** CCActionManager associated with this director
+     @since v2.0
+     */
+    CC_PROPERTY(CCActionManager*, m_pSceneSlowActionManager, SlowActionManager);
+//////////////////////////////////////////////////////////////////////
+	bool m_bPrintCurFrameCostTime;
+	bool m_bOpenTest;
+// add by camel
+public:
+	void registerDrawSceneListener(CCDrawSceneListener* pListener);
+	void unregisterDrawSceneListener(CCDrawSceneListener* pListener);
+//////////////////////////////////////////////////////////////////////
+    
+    int  fireeEvent_BrowserWillOpen(const char * url);
+	int fireBrowserEventMessage(int nMsgID, const char * pMessage);
+    void registerBrowserEventListener(CCBrowserEventListener * listener);
+
+//////////////////////////////////////////////////////////////////////////
+	// 此接口必须在cocos2dx主循环所在的线程调用 [8/20/2014 gusterzhai]
+	void enableThreadMutual(bool bEnable);
+	bool isInMainThread();
 public:
     /** returns a shared instance of the director */
     static CCDirector* sharedDirector(void);
+    
+    float getFPS();
+
+	void setNetTcpDelay(int nDelay);
+	void setNetUdpDelay(int nDelay);
+
+	void setUdpServerLostRate(int value){m_nUdpServerLostRate = value;}
+	void setUdpServerAvgDelay(int value){m_nUdpServerAvgDelay = value;}
+	void setUdpServerRealTimeDelay(int value){m_nUdpServerRealTimeDelay = value;}
+	void setEnemyBulletNum(int value){m_nEnemyBulletNum = value;}
+	void setMainBulletNum(int value){m_nMainBulletNum = value;}
+	void setEnemyNum(int value){m_nEnemyNum = value;}
+	void set9SpriteNoBatchNode(bool isNoBatchNode) {m_9SpriteNoBatchNode = isNoBatchNode;}
+
+	bool get9SpriteNoBatchNode() {return m_9SpriteNoBatchNode;}
+#if CC_TARGET_PLATFORM == CC_PLATFORM_WIN32
+	void addDrawTextureIDToVec(GLuint textureID);
+	void setTextureInfoState(bool state) {m_bTextureDrawInfo = state;}
+	bool getTextureInfoState() {return m_bTextureDrawInfo;}
+	void putTextureIDFileMap(std::string &fileName, GLuint textureID);
+	void removeTextureIDFromMap(GLuint textureID);
+#endif
 
 protected:
 
@@ -384,7 +494,11 @@ protected:
     CCLabelAtlas *m_pFPSLabel;
     CCLabelAtlas *m_pSPFLabel;
     CCLabelAtlas *m_pDrawsLabel;
-    
+	CCLabelAtlas *m_pDelayLabel;
+	CCLabelAtlas *m_pUdpServerDelayLabel;
+	CCLabelAtlas *m_pBulletNumLabel;
+    CCLabelAtlas *m_pEnemyNumLabel;
+
     /** Whether or not the Director is paused */
     bool m_bPaused;
 
@@ -435,6 +549,36 @@ protected:
     
     // CCEGLViewProtocol will recreate stats labels to fit visible rect
     friend class CCEGLViewProtocol;
+
+	////////////////////////////////////////////////
+	// add by camel
+	VECCCDRAWSCENELISTENER	m_vecDrawSceneListener;
+	////////////////////////////////////////////////
+    
+    
+    CCBrowserEventListener *    m_pBrowserEventListener;
+
+	bool m_bEnableThreadMutual;
+
+	int m_nNetTcpDelay;
+	int m_nNetUdpDelay;
+
+	int m_nUdpServerLostRate;
+	int m_nUdpServerAvgDelay;
+	int m_nUdpServerRealTimeDelay;
+
+	int m_nEnemyBulletNum;
+	int m_nMainBulletNum;
+	int m_nEnemyNum; 
+
+	bool m_bAutoBatch;
+	bool m_9SpriteNoBatchNode; //9宫格图片 不使用batchnode
+
+#if CC_TARGET_PLATFORM == CC_PLATFORM_WIN32
+	bool m_bTextureDrawInfo;
+	std::list<GLuint> m_listDrawTexture;
+	std::map<GLuint, std::string> m_mapTextureFile;
+#endif
 };
 
 /** 
@@ -449,17 +593,19 @@ protected:
 class CCDisplayLinkDirector : public CCDirector
 {
 public:
-    CCDisplayLinkDirector(void) 
-        : m_bInvalid(false)
-    {}
+	CCDisplayLinkDirector(void);
 
     virtual void mainLoop(void);
+	virtual void startRender(void);
+	virtual void stopRender(void);
+	virtual bool isRendering(void) const;
     virtual void setAnimationInterval(double dValue);
     virtual void startAnimation(void);
     virtual void stopAnimation();
 
 protected:
-    bool m_bInvalid;
+	bool m_bIsRendering;
+	bool m_bIsAnimationPlaying;
 };
 
 // end of base_node group

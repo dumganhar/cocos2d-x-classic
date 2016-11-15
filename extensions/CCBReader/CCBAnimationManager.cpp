@@ -67,7 +67,9 @@ CCBAnimationManager::~CCBAnimationManager()
     
     mNodeSequences->release();
     mBaseValues->release();
-    mSequences->release();
+    //mSequences->release();
+	// 对mSequences做保护，防止野指针
+	CC_SAFE_RELEASE_NULL(mSequences);
     setRootNode(NULL);
     setDelegate(NULL);
 
@@ -730,15 +732,18 @@ void CCBAnimationManager::runAnimations(const char *pName)
     
 void CCBAnimationManager::runAnimations(int nSeqId, float fTweenDuraiton)
 {
-    runAnimationsForSequenceIdTweenDuration(nSeqId, fTweenDuraiton);
+	if (-1 != nSeqId)
+	{
+		runAnimationsForSequenceIdTweenDuration(nSeqId, fTweenDuraiton);
+	}    
 }
 
 void CCBAnimationManager::runAnimationsForSequenceIdTweenDuration(int nSeqId, float fTweenDuration)
 {
     CCAssert(nSeqId != -1, "Sequence id couldn't be found");
-    
+
     mRootNode->stopAllActions();
-    
+
     CCDictElement* pElement = NULL;
     CCDICT_FOREACH(mNodeSequences, pElement)
     {
@@ -788,9 +793,12 @@ void CCBAnimationManager::runAnimationsForSequenceIdTweenDuration(int nSeqId, fl
     
     // Make callback at end of sequence
     CCBSequence *seq = getSequence(nSeqId);
-    CCAction *completeAction = CCSequence::createWithTwoActions(CCDelayTime::create(seq->getDuration() + fTweenDuration),
+    if (seq)
+    {
+        CCAction *completeAction = CCSequence::createWithTwoActions(CCDelayTime::create(seq->getDuration() + fTweenDuration),
                                                                 CCCallFunc::create(this, callfunc_selector(CCBAnimationManager::sequenceCompleted)));
-    mRootNode->runAction(completeAction);
+        mRootNode->runAction(completeAction);
+    }
     
     // Set the running scene
 
@@ -814,7 +822,10 @@ void CCBAnimationManager::runAnimationsForSequenceIdTweenDuration(int nSeqId, fl
 void CCBAnimationManager::runAnimationsForSequenceNamedTweenDuration(const char *pName, float fTweenDuration)
 {
     int seqId = getSequenceId(pName);
-    runAnimationsForSequenceIdTweenDuration(seqId, fTweenDuration);
+	if (-1 != seqId)
+	{
+		runAnimationsForSequenceIdTweenDuration(seqId, fTweenDuration);
+	}    
 }
 
 void CCBAnimationManager::runAnimationsForSequenceNamed(const char *pName)

@@ -519,11 +519,11 @@ void CCGLProgram::setUniformsForBuiltins()
 		// This doesn't give the most accurate global time value.
 		// Cocos2D doesn't store a high precision time value, so this will have to do.
 		// Getting Mach time per frame per shader using time could be extremely expensive.
-        float time = director->getTotalFrames() * director->getAnimationInterval();
+        float time = float(director->getTotalFrames() * director->getAnimationInterval());
 		
-        setUniformLocationWith4f(m_uUniforms[kCCUniformTime], time/10.0, time, time*2, time*4);
-        setUniformLocationWith4f(m_uUniforms[kCCUniformSinTime], time/8.0, time/4.0, time/2.0, sinf(time));
-        setUniformLocationWith4f(m_uUniforms[kCCUniformCosTime], time/8.0, time/4.0, time/2.0, cosf(time));
+        setUniformLocationWith4f(m_uUniforms[kCCUniformTime], GLfloat(time/10.0), GLfloat(time), GLfloat(time*2), GLfloat(time*4));
+        setUniformLocationWith4f(m_uUniforms[kCCUniformSinTime], GLfloat(time/8.0), GLfloat(time/4.0), GLfloat(time/2.0), GLfloat(sinf(time)));
+        setUniformLocationWith4f(m_uUniforms[kCCUniformCosTime], GLfloat(time/8.0), GLfloat(time/4.0), GLfloat(time/2.0), GLfloat(cosf(time)));
 	}
 	
 	if (m_uUniforms[kCCUniformRandom01] != -1)

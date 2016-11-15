@@ -264,30 +264,30 @@ bool WebSocket::init(const Delegate& delegate,
     _delegate = const_cast<Delegate*>(&delegate);
     
     //ws://
-    pos = host.find("ws://");
+    pos = static_cast<int>(host.find("ws://"));
     if (pos == 0){
         host.erase(0,5);
     }
     
-    pos = host.find("wss://");
+    pos = static_cast<int>(host.find("wss://"));
     if (pos == 0)
     {
         host.erase(0,6);
         useSSL = true;
     }
     
-    pos = host.find(":");
+    pos = static_cast<int>(host.find(":"));
     if(pos >= 0){
         port = atoi(host.substr(pos+1, host.size()).c_str());
     }
     
-    pos = host.find("/", pos);
+    pos = static_cast<int>(host.find("/", pos));
     std::string path = "/";
     if(pos >= 0){
         path += host.substr(pos + 1, host.size());
     }
     
-    pos = host.find(":");
+    pos = static_cast<int>(host.find(":"));
     if(pos >= 0){
         host.erase(pos, host.size());
     }
@@ -301,7 +301,7 @@ bool WebSocket::init(const Delegate& delegate,
     int protocolCount = 0;
     if (protocols && protocols->size() > 0)
     {
-        protocolCount = protocols->size();
+        protocolCount = static_cast<int>(protocols->size());
     }
     else
     {
@@ -346,7 +346,7 @@ void WebSocket::send(const std::string& message)
         Data* data = new Data();
         data->bytes = new char[message.length()+1];
         strcpy(data->bytes, message.c_str());
-        data->len = message.length();
+        data->len = static_cast<int>(message.length());
         msg->obj = data;
         _wsHelper->sendMessageToSubThread(msg);
     }
@@ -614,7 +614,7 @@ int WebSocket::onSocketCallback(struct libwebsocket_context *ctx,
                     memcpy(bytes, in, len);
                     
                     data->bytes = bytes;
-                    data->len = len;
+                    data->len = static_cast<int>(len);
                     msg->obj = (void*)data;
                     
                     _wsHelper->sendMessageToUIThread(msg);

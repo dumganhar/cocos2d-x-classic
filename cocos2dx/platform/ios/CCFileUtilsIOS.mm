@@ -301,6 +301,8 @@ bool CCFileUtilsIOS::isAbsolutePath(const std::string& strPath)
     return [path isAbsolutePath] ? true : false;
 }
 
+
+/*
 CCDictionary* CCFileUtilsIOS::createCCDictionaryWithContentsOfFile(const std::string& filename)
 {
     std::string fullPath = CCFileUtils::sharedFileUtils()->fullPathForFilename(filename.c_str());
@@ -322,6 +324,7 @@ CCDictionary* CCFileUtilsIOS::createCCDictionaryWithContentsOfFile(const std::st
         return NULL;
     }
 }
+*/
 
 bool CCFileUtilsIOS::writeToFile(CCDictionary *dict, const std::string &fullPath)
 {

@@ -29,8 +29,10 @@ NS_CC_EXT_BEGIN
 
 #define SCROLL_DEACCEL_RATE  0.95f
 #define SCROLL_DEACCEL_DIST  1.0f
-#define BOUNCE_DURATION      0.15f
-#define INSET_RATIO          0.2f
+//#define BOUNCE_DURATION      0.15f
+//#define INSET_RATIO          0.2f
+#define BOUNCE_DURATION      0.05f
+#define INSET_RATIO          0.05f
 #define MOVE_INCH            7.0f/160.0f
 
 static float convertDistanceFromPointToInch(float pointDis)
@@ -55,13 +57,14 @@ CCScrollView::CCScrollView()
 , m_pTouches(NULL)
 , m_fMinScale(0.0f)
 , m_fMaxScale(0.0f)
+, m_fFoucsScale(1.0f)
 {
 
 }
 
 CCScrollView::~CCScrollView()
 {
-    CC_SAFE_RELEASE(m_pTouches);
+    m_pTouches->release();
 }
 
 CCScrollView* CCScrollView::create(CCSize size, CCNode* container/* = NULL*/)
@@ -119,7 +122,9 @@ bool CCScrollView::initWithViewSize(CCSize size, CCNode *container/* = NULL*/)
         m_fTouchLength = 0.0f;
         
         this->addChild(m_pContainer);
-        m_fMinScale = m_fMaxScale = 1.0f;
+		m_fMinScale = m_fMaxScale = 1.0f;
+		//原来的代码缺了这个属性设置。
+		this->updateInset();
         return true;
     }
     return false;
@@ -213,6 +218,14 @@ void CCScrollView::setContentOffset(CCPoint offset, bool animated/* = false*/)
     }
 }
 
+void CCScrollView::stopAnimateScroll()
+{
+	if (m_pContainer != NULL)
+	{
+		m_pContainer->stopAllActions();
+	}
+}
+
 void CCScrollView::setContentOffsetInDuration(CCPoint offset, float dt)
 {
     CCFiniteTimeAction *scroll, *expire;
@@ -221,6 +234,15 @@ void CCScrollView::setContentOffsetInDuration(CCPoint offset, float dt)
     expire = CCCallFuncN::create(this, callfuncN_selector(CCScrollView::stoppedAnimatedScroll));
     m_pContainer->runAction(CCSequence::create(scroll, expire, NULL));
     this->schedule(schedule_selector(CCScrollView::performedAnimatedScroll));
+}
+
+void CCScrollView::setContentOffsetInEaseDuration(CCPoint offset, float dt)
+{
+	CCFiniteTimeAction* scroll = CCMoveTo::create(dt, offset);
+	CCActionInterval* easeOut = CCEaseOut::create((CCActionInterval*)(scroll), dt);
+	CCFiniteTimeAction* expire = CCCallFuncN::create(this, callfuncN_selector(CCScrollView::stoppedAnimatedScroll));
+	m_pContainer->runAction(CCSequence::create(easeOut, expire, NULL));
+	this->schedule(schedule_selector(CCScrollView::performedAnimatedScroll));
 }
 
 CCPoint CCScrollView::getContentOffset()
@@ -294,7 +316,7 @@ void CCScrollView::setZoomScaleInDuration(float s, float dt)
 
 void CCScrollView::setViewSize(CCSize size)
 {
-    m_tViewSize = size;
+	m_tViewSize = size;
     CCLayer::setContentSize(size);
 }
 
@@ -319,6 +341,8 @@ void CCScrollView::setContainer(CCNode * pContainer)
     this->addChild(this->m_pContainer);
 
     this->setViewSize(this->m_tViewSize);
+	//这里在设置了新的container后没有设置新的contentsize，导致还使用原有的insect，拖动的时候区域判断有错误。
+	//应该是cocos的bug。
 }
 
 void CCScrollView::relocateContainer(bool animated)
@@ -370,15 +394,20 @@ void CCScrollView::deaccelerateScrolling(float dt)
         return;
     }
     
-    float newX, newY;
     CCPoint maxInset, minInset;
-    
-    m_pContainer->setPosition(ccpAdd(m_pContainer->getPosition(), m_tScrollDistance));
-    
-    if (m_bBounceable)
+	CCPoint pos = m_pContainer->getPosition();
+	CCPoint targetPos = ccpAdd(pos, m_tScrollDistance);
+    bool bBounce = false;
+	if (m_bBounceable)
     {
         maxInset = m_fMaxInset;
         minInset = m_fMinInset;
+		if(m_tScrollDistance.x != 0){
+			bBounce = bBounce || pos.x >= maxInset.x || pos.x <= minInset.x;
+		}
+		if(m_tScrollDistance.y != 0){
+			bBounce = bBounce || pos.y >= maxInset.y || pos.y <= minInset.y;
+		}
     }
     else
     {
@@ -387,24 +416,20 @@ void CCScrollView::deaccelerateScrolling(float dt)
     }
     
     //check to see if offset lies within the inset bounds
-    newX     = MIN(m_pContainer->getPosition().x, maxInset.x);
-    newX     = MAX(newX, minInset.x);
-    newY     = MIN(m_pContainer->getPosition().y, maxInset.y);
-    newY     = MAX(newY, minInset.y);
+    targetPos.x     = MIN(targetPos.x, maxInset.x);
+    targetPos.x     = MAX(targetPos.x, minInset.x);
+    targetPos.y     = MIN(targetPos.y, maxInset.y);
+    targetPos.y     = MAX(targetPos.y, minInset.y);
     
-    newX = m_pContainer->getPosition().x;
-    newY = m_pContainer->getPosition().y;
-    
-    m_tScrollDistance     = ccpSub(m_tScrollDistance, ccp(newX - m_pContainer->getPosition().x, newY - m_pContainer->getPosition().y));
+    m_tScrollDistance     = ccpSub(targetPos,m_pContainer->getPosition());
     m_tScrollDistance     = ccpMult(m_tScrollDistance, SCROLL_DEACCEL_RATE);
-    this->setContentOffset(ccp(newX,newY));
-    
+	this->setContentOffset(targetPos);
+
+	bool cantMoveX = targetPos.x >= maxInset.x || targetPos.x <= minInset.x;
+	bool cantMoveY = targetPos.y >= maxInset.y || targetPos.y <= minInset.y;
     if ((fabsf(m_tScrollDistance.x) <= SCROLL_DEACCEL_DIST &&
-         fabsf(m_tScrollDistance.y) <= SCROLL_DEACCEL_DIST) ||
-        newY > maxInset.y || newY < minInset.y ||
-        newX > maxInset.x || newX < minInset.x ||
-        newX == maxInset.x || newX == minInset.x ||
-        newY == maxInset.y || newY == minInset.y)
+         fabsf(m_tScrollDistance.y) <= SCROLL_DEACCEL_DIST)
+		 ||(cantMoveX&&cantMoveY)||bBounce)
     {
         this->unschedule(schedule_selector(CCScrollView::deaccelerateScrolling));
         this->relocateContainer(true);
@@ -523,6 +548,8 @@ void CCScrollView::afterDraw()
 {
     if (m_bClippingToBounds)
     {
+		CCDirector::sharedDirector()->flushDraw();
+
         if (m_bScissorRestored) {//restore the parent's scissor rect
             CCEGLView::sharedOpenGLView()->setScissorInPoints(m_tParentScissorRect.origin.x, m_tParentScissorRect.origin.y, m_tParentScissorRect.size.width, m_tParentScissorRect.size.height);
         }
@@ -539,6 +566,8 @@ void CCScrollView::visit()
     {
 		return;
     }
+
+	CCDirector::sharedDirector()->flushDraw();
 
 	kmGLPushMatrix();
 	
@@ -603,6 +632,12 @@ bool CCScrollView::ccTouchBegan(CCTouch* touch, CCEvent* event)
     }
     
     CCRect frame = getViewRect();
+	//修复ShowActivityIndicator后，无法接收到touchStop和touchCancel事件导致不响应触摸。
+	if (m_pTouches->count() == 1)
+	{
+		m_pTouches->removeAllObjects();
+		m_bTouchMoved     = false;
+	}
 
     //dispatcher does not know about clipping. reject touches outside visible bounds.
     if (m_pTouches->count() > 2 ||
@@ -624,6 +659,7 @@ bool CCScrollView::ccTouchBegan(CCTouch* touch, CCEvent* event)
         m_bDragging     = true; //dragging started
         m_tScrollDistance = ccp(0.0f, 0.0f);
         m_fTouchLength    = 0.0f;
+        m_fStartX = this->getPositionX();
     }
     else if (m_pTouches->count() == 2)
     {
@@ -665,7 +701,7 @@ void CCScrollView::ccTouchMoved(CCTouch* touch, CCEvent* event)
             {
                 dis = moveDistance.x;
             }
-            else
+            else if (m_eDirection == kCCScrollViewDirectionBoth)
             {
                 dis = sqrtf(moveDistance.x*moveDistance.x + moveDistance.y*moveDistance.y);
             }
@@ -684,11 +720,15 @@ void CCScrollView::ccTouchMoved(CCTouch* touch, CCEvent* event)
             m_tTouchPoint = newPoint;
             m_bTouchMoved = true;
             
+            float posx = this->getPositionX();
+            
             if (frame.containsPoint(this->convertToWorldSpace(newPoint)))
             {
                 switch (m_eDirection)
                 {
                     case kCCScrollViewDirectionVertical:
+                        if(fabs(posx - m_fStartX) > 0) moveDistance.y = 0;
+
                         moveDistance = ccp(0.0f, moveDistance.y);
                         break;
                     case kCCScrollViewDirectionHorizontal:
@@ -700,12 +740,86 @@ void CCScrollView::ccTouchMoved(CCTouch* touch, CCEvent* event)
                 
                 maxInset = m_fMaxInset;
                 minInset = m_fMinInset;
+                
+                CCPoint min,max;
+                min = this->minContainerOffset();
+                max = this->maxContainerOffset();
+                
+                moveDistance.x *= m_fFoucsScale;
+                moveDistance.y *= m_fFoucsScale;
 
                 newX     = m_pContainer->getPosition().x + moveDistance.x;
                 newY     = m_pContainer->getPosition().y + moveDistance.y;
+                
+                if (min.y - newY > 0) {
+                    m_fFoucsScale = 1.0 - (min.y - newY) / 150;
+                    
+                    if (m_fFoucsScale < 0) {
+                        m_fFoucsScale = 0;
+                    }
+                    
+                    if (m_fFoucsScale > 1) {
+                        m_fFoucsScale = 1.0;
+                    }
+                    
+                    
+                    moveDistance.x *= m_fFoucsScale;
+                    moveDistance.y *= m_fFoucsScale;
+                    
+                    newX     = m_pContainer->getPosition().x + moveDistance.x;
+                    newY     = m_pContainer->getPosition().y + moveDistance.y;
+                }
+                else
+                {
+                    if (min.y > max.y)
+                        m_fFoucsScale = 1.0 - (newY - min.y) / 150;
+                    else
+                        m_fFoucsScale = 1.0 - (newY - max.y) / 150;
+                    
+                    if (m_fFoucsScale < 0) {
+                        m_fFoucsScale = 0;
+                    }
+                    
+                    if (m_fFoucsScale > 1) {
+                        m_fFoucsScale = 1.0;
+                    }
+                    
+                    
+                    moveDistance.x *= m_fFoucsScale;
+                    moveDistance.y *= m_fFoucsScale;
+                    
+                    newX     = m_pContainer->getPosition().x + moveDistance.x;
+                    newY     = m_pContainer->getPosition().y + moveDistance.y;
+                }
 
                 m_tScrollDistance = moveDistance;
                 this->setContentOffset(ccp(newX, newY));
+
+				// 优化按钮与滑动区域的响应 [4/3/2014 gusterzhai]
+				{
+					switch (m_eDirection)
+					{
+					case kCCScrollViewDirectionVertical:
+						{
+							if(fabs(m_tScrollDistance.y) > 0) 
+							{
+								CCDirector::sharedDirector()->getTouchDispatcher()->setScrollLock(true);
+							}
+						}	
+						break;
+					case kCCScrollViewDirectionHorizontal:
+						{
+							if(fabs(m_tScrollDistance.x) > 0) 
+							{
+								CCDirector::sharedDirector()->getTouchDispatcher()->setScrollLock(true);
+							}
+						}	
+						break;
+					default:
+						break;
+					}
+				}
+				
             }
         }
         else if (m_pTouches->count() == 2 && !m_bDragging)
@@ -719,6 +833,7 @@ void CCScrollView::ccTouchMoved(CCTouch* touch, CCEvent* event)
 
 void CCScrollView::ccTouchEnded(CCTouch* touch, CCEvent* event)
 {
+    m_fFoucsScale = 1.0f;
     if (!this->isVisible())
     {
         return;

@@ -55,6 +55,8 @@ public:
     bool init(const char *pszEncoding);
     bool parse(const char* pXMLData, unsigned int uDataLength);
     bool parse(const char *pszFile);
+    bool parseEncrypt(const char *pszFile);
+    bool parsePlain(const char *pszFile);
     void setDelegator(CCSAXDelegator* pDelegator);
 
     static void startElement(void *ctx, const CC_XML_CHAR *name, const CC_XML_CHAR **atts);

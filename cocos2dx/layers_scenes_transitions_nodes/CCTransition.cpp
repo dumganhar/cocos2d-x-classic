@@ -37,6 +37,7 @@ THE SOFTWARE.
 #include "actions/CCActionGrid.h"
 #include "CCLayer.h"
 #include "misc_nodes/CCRenderTexture.h"
+#include "support/CCProfiling.h"
 
 
 NS_CC_BEGIN
@@ -102,6 +103,7 @@ void CCTransitionScene::sceneOrder()
 
 void CCTransitionScene::draw()
 {
+	CC_PROFILER_HELPER;
     CCScene::draw();
 
     if( m_bIsInSceneOnTop ) {

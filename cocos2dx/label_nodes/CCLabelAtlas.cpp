@@ -101,8 +101,8 @@ bool CCLabelAtlas::initWithString(const char *theString, const char *fntFile)
     
   std::string texturePathStr = relPathStr + ((CCString*)dict->objectForKey("textureFilename"))->getCString();
   CCString *textureFilename = CCString::create(texturePathStr);
-  unsigned int width = ((CCString*)dict->objectForKey("itemWidth"))->intValue() / CC_CONTENT_SCALE_FACTOR();
-  unsigned int height = ((CCString*)dict->objectForKey("itemHeight"))->intValue() / CC_CONTENT_SCALE_FACTOR();
+  unsigned int width = (unsigned int)(((CCString*)dict->objectForKey("itemWidth"))->intValue() / CC_CONTENT_SCALE_FACTOR());
+  unsigned int height = (unsigned int)(((CCString*)dict->objectForKey("itemHeight"))->intValue() / CC_CONTENT_SCALE_FACTOR());
   unsigned int startChar = ((CCString*)dict->objectForKey("firstChar"))->intValue();
   
 
@@ -125,8 +125,8 @@ void CCLabelAtlas::updateAtlasValues()
     float itemHeightInPixels = m_uItemHeight * CC_CONTENT_SCALE_FACTOR();
     if (m_bIgnoreContentScaleFactor)
     {
-        itemWidthInPixels = m_uItemWidth;
-        itemHeightInPixels = m_uItemHeight;
+        itemWidthInPixels = (float)m_uItemWidth;
+        itemHeightInPixels = (float)m_uItemHeight;
     }
 
     CCAssert( n <= m_pTextureAtlas->getCapacity(), "updateAtlasValues: Invalid String length");
@@ -215,6 +215,7 @@ const char* CCLabelAtlas::getString(void)
 #if CC_LABELATLAS_DEBUG_DRAW    
 void CCLabelAtlas::draw()
 {
+	CC_PROFILER_HELPER;
     CCAtlasNode::draw();
 
     const CCSize& s = this->getContentSize();

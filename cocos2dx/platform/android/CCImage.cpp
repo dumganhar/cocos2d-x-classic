@@ -81,7 +81,7 @@ public:
     {
            JniMethodInfo methodInfo;
            if (! JniHelper::getStaticMethodInfo(methodInfo, "org/cocos2dx/lib/Cocos2dxBitmap", "createTextBitmapShadowStroke",
-               "(Ljava/lang/String;Ljava/lang/String;IFFFIIIZFFFZFFFF)V"))
+               "([BLjava/lang/String;IFFFIIIZFFFZFFFF)Z"))
            {
                CCLOG("%s %d: error to get methodInfo", __FILE__, __LINE__);
                return false;
@@ -106,13 +106,18 @@ public:
             * and data.
             * use this approach to decrease the jni call number
            */
-           jstring jstrText = methodInfo.env->NewStringUTF(text);
+		   size_t textLength = strlen(text);
+		   jbyteArray jbaText = methodInfo.env->NewByteArray(textLength);
+		   methodInfo.env->SetByteArrayRegion(jbaText, 0, textLength, (const jbyte *)text);
+
            jstring jstrFont = methodInfo.env->NewStringUTF(fullPathOrFontName.c_str());
 
-           methodInfo.env->CallStaticVoidMethod(methodInfo.classID, methodInfo.methodID, jstrText,
-               jstrFont, (int)fontSize, textTintR, textTintG, textTintB, eAlignMask, nWidth, nHeight, shadow, shadowDeltaX, -shadowDeltaY, shadowBlur, stroke, strokeColorR, strokeColorG, strokeColorB, strokeSize);
-
-           methodInfo.env->DeleteLocalRef(jstrText);
+           if(!methodInfo.env->CallStaticBooleanMethod(methodInfo.classID, methodInfo.methodID, jbaText,
+               jstrFont, (int)fontSize, textTintR, textTintG, textTintB, eAlignMask, nWidth, nHeight, shadow, shadowDeltaX, -shadowDeltaY, shadowBlur, stroke, strokeColorR, strokeColorG, strokeColorB, strokeSize))
+           {
+                return false;
+           }
+		   methodInfo.env->DeleteLocalRef(jbaText);
            methodInfo.env->DeleteLocalRef(jstrFont);
            methodInfo.env->DeleteLocalRef(methodInfo.classID);
 

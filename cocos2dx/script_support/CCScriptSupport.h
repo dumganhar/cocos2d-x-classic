@@ -172,10 +172,10 @@ public:
     virtual void removeScriptObjectByCCObject(CCObject* pObj) = 0;
     
     /** Remove script function handler, only CCLuaEngine class need to implement this function. */
-    virtual void removeScriptHandler(int nHandler) {};
+    virtual void removeScriptHandler(int /*nHandler*/) {};
     
     /** Reallocate script function handler, only CCLuaEngine class need to implement this function. */
-    virtual int reallocateScriptHandler(int nHandler) { return -1;}
+    virtual int reallocateScriptHandler(int /*nHandler*/) { return -1;}
     
     /**
      @brief Execute script code contained in the given string.

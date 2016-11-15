@@ -101,8 +101,8 @@ int gaussj(kmMat4 *a, kmMat4 *b)
             if (ipiv[j] != 1) {
                 for (k = 0; k < n; k++) {
                     if (ipiv[k] == 0) {
-                        if (abs(get(a,j, k)) >= big) {
-                            big = abs(get(a,j, k));
+                        if (fabs(get(a,j, k)) >= big) {
+                            big = (float)fabs(get(a,j, k));
                             irow = j;
                             icol = k;
                         }
@@ -216,7 +216,7 @@ kmMat4* const kmMat4Transpose(kmMat4* pOut, const kmMat4* pIn)
  */
 kmMat4* const kmMat4Multiply(kmMat4* pOut, const kmMat4* pM1, const kmMat4* pM2)
 {
-#if defined(__ARM_NEON__)
+#if defined(_ARM_ARCH_7)
 
     float mat[16];
 
@@ -445,17 +445,17 @@ kmMat4* const kmMat4RotationPitchYawRoll(kmMat4* pOut, const kmScalar pitch, con
     double srsp = sr * sp;
     double crsp = cr * sp;
 
-    pOut->mat[0] = (kmScalar) cp * cy;
-    pOut->mat[4] = (kmScalar) cp * sy;
+    pOut->mat[0] = (kmScalar) (cp * cy);
+    pOut->mat[4] = (kmScalar) (cp * sy);
     pOut->mat[8] = (kmScalar) - sp;
 
-    pOut->mat[1] = (kmScalar) srsp * cy - cr * sy;
-    pOut->mat[5] = (kmScalar) srsp * sy + cr * cy;
-    pOut->mat[9] = (kmScalar) sr * cp;
+    pOut->mat[1] = (kmScalar) (srsp * cy - cr * sy);
+    pOut->mat[5] = (kmScalar) (srsp * sy + cr * cy);
+    pOut->mat[9] = (kmScalar) (sr * cp);
 
-    pOut->mat[2] = (kmScalar) crsp * cy + sr * sy;
-    pOut->mat[6] = (kmScalar) crsp * sy - sr * cy;
-    pOut->mat[10] = (kmScalar) cr * cp;
+    pOut->mat[2] = (kmScalar) (crsp * cy + sr * sy);
+    pOut->mat[6] = (kmScalar) (crsp * sy - sr * cy);
+    pOut->mat[10] = (kmScalar) (cr * cp);
 
     pOut->mat[3] = pOut->mat[7] = pOut->mat[11] = 0.0;
     pOut->mat[15] = 1.0;
@@ -584,7 +584,7 @@ kmMat4* const kmMat4PerspectiveProjection(kmMat4* pOut, kmScalar fovY,
 {
     kmScalar r = kmDegreesToRadians(fovY / 2);
     kmScalar deltaZ = zFar - zNear;
-    kmScalar s = sin(r);
+    kmScalar s = (kmScalar)(sin(r));
     kmScalar cotangent = 0;
 
     if (deltaZ == 0 || s == 0 || aspect == 0) {
@@ -592,7 +592,7 @@ kmMat4* const kmMat4PerspectiveProjection(kmMat4* pOut, kmScalar fovY,
     }
 
     //cos(r) / sin(r) = cot(r)
-    cotangent = cos(r) / s;
+    cotangent = (kmScalar)(cos(r) / s);
 
     kmMat4Identity(pOut);
     pOut->mat[0] = cotangent / aspect;

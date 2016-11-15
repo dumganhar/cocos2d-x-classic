@@ -33,6 +33,12 @@ THE SOFTWARE.
 #include "png.h"
 #include "jpeglib.h"
 #include "tiffio.h"
+#include "support/ccUtils.h"
+#include "support/zip_support/ZipUtils.h"
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
+#include "platform/android/CCFileUtilsAndroid.h"
+#endif
+
 #include <string>
 #include <ctype.h>
 
@@ -86,6 +92,8 @@ CCImage::CCImage()
 , m_pData(0)
 , m_bHasAlpha(false)
 , m_bPreMulti(false)
+, m_bCompressed(false)
+, m_uNumberOfMipmaps(0)
 {
 
 }
@@ -95,10 +103,30 @@ CCImage::~CCImage()
     CC_SAFE_DELETE_ARRAY(m_pData);
 }
 
+void decryptBuffer(unsigned char* buffer, unsigned int length, int hash)
+{
+    if (!buffer || 0==length)
+    {
+        return;
+    }
+    
+    //canny
+    int iLimit = 40960;
+    if(iLimit>(int)length)
+    {
+        iLimit = length;
+    }
+    
+    for (int i=0; i<iLimit; ++i)
+    {
+        buffer[i] = ccBitrand(buffer[i]);
+		buffer[i] ^= ((hash + iLimit - i) % 256);
+    }
+}
+
 bool CCImage::initWithImageFile(const char * strPath, EImageFormat eImgFmt/* = eFmtPng*/)
 {
     bool bRet = false;
-
 #ifdef EMSCRIPTEN
     // Emscripten includes a re-implementation of SDL that uses HTML5 canvas
     // operations underneath. Consequently, loading images via IMG_Load (an SDL
@@ -125,6 +153,13 @@ bool CCImage::initWithImageFile(const char * strPath, EImageFormat eImgFmt/* = e
     if (pBuffer != NULL && nSize > 0)
     {
         bRet = initWithImageData(pBuffer, nSize, eImgFmt);
+        if (!bRet)
+        {
+            decryptBuffer(pBuffer, nSize, ccHash(ccFileName(fullPath).c_str()));
+            bRet = initWithImageData(pBuffer, nSize, eImgFmt);
+            CCLOG("[CCImage::initWithImageFile] deal with encrypted image: %s", 
+                fullPath.c_str());
+        }
     }
     CC_SAFE_DELETE_ARRAY(pBuffer);
 #endif // EMSCRIPTEN
@@ -136,12 +171,51 @@ bool CCImage::initWithImageFileThreadSafe(const char *fullpath, EImageFormat ima
 {
     bool bRet = false;
     unsigned long nSize = 0;
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
+    CCFileUtilsAndroid *fileUitls = (CCFileUtilsAndroid*)CCFileUtils::sharedFileUtils();
+    unsigned char *pBuffer = fileUitls->getFileDataForAsync(fullpath, "rb", &nSize);
+#else
     unsigned char *pBuffer = CCFileUtils::sharedFileUtils()->getFileData(fullpath, "rb", &nSize);
+#endif
     if (pBuffer != NULL && nSize > 0)
     {
-        bRet = initWithImageData(pBuffer, nSize, imageType);
+        bRet = true;
+
+        // uncompress pvr.ccz file
+        if (imageType == kFmtPvr)
+        {
+            unsigned char *pUncompressedBuffer = NULL;
+            int nUncompressedSize = 0;
+            nUncompressedSize = ZipUtils::ccInflateCCZData(pBuffer, nSize, &pUncompressedBuffer);
+            bRet = nUncompressedSize >= 0;
+            if (!bRet)
+            {
+                decryptBuffer(pBuffer, nSize, ccHash(ccFileName(fullpath).c_str()));
+                nUncompressedSize = ZipUtils::ccInflateCCZData(pBuffer, nSize, &pUncompressedBuffer);
+                bRet = nUncompressedSize >= 0;
+            }
+            if (bRet)
+            {
+                CC_SAFE_DELETE_ARRAY(pBuffer);
+                pBuffer = pUncompressedBuffer;
+                nSize = nUncompressedSize;
+            }
+        }
+
+        // parze image data
+        if (bRet)
+        {
+            bRet = initWithImageData(pBuffer, nSize, imageType);
+            if (!bRet)
+            {
+                decryptBuffer(pBuffer, nSize, ccHash(ccFileName(fullpath).c_str()));
+                bRet = initWithImageData(pBuffer, nSize, imageType);
+                CCLOG("[CCImage::initWithImageFileThreadSafe] deal with encrypted image: %s", fullpath);
+            }
+        }
     }
     CC_SAFE_DELETE_ARRAY(pBuffer);
+
     return bRet;
 }
 
@@ -175,6 +249,11 @@ bool CCImage::initWithImageData(void * pData,
         else if (kFmtWebp == eFmt)
         {
             bRet = _initWithWebpData(pData, nDataLen);
+            break;
+        }
+        else if (kFmtPvr == eFmt)
+        {
+            bRet = _initWithPvrData(pData, nDataLen);
             break;
         }
         else if (kFmtRawData == eFmt)
@@ -255,9 +334,9 @@ bool CCImage::initWithImageData(void * pData,
  */
 
 struct my_error_mgr {
-  struct jpeg_error_mgr pub;	/* "public" fields */
+  struct jpeg_error_mgr pub;    /* "public" fields */
 
-  jmp_buf setjmp_buffer;	/* for return to caller */
+  jmp_buf setjmp_buffer;    /* for return to caller */
 };
 
 typedef struct my_error_mgr * my_error_ptr;
@@ -285,10 +364,10 @@ bool CCImage::_initWithJpgData(void * data, int nSize)
     /* these are standard libjpeg structures for reading(decompression) */
     struct jpeg_decompress_struct cinfo;
     /* We use our private extension JPEG error handler.
-	 * Note that this struct must live as long as the main JPEG parameter
-	 * struct, to avoid dangling-pointer problems.
-	 */
-	struct my_error_mgr jerr;
+     * Note that this struct must live as long as the main JPEG parameter
+     * struct, to avoid dangling-pointer problems.
+     */
+    struct my_error_mgr jerr;
     /* libjpeg data structure for storing one row, that is, scanline of an image */
     JSAMPROW row_pointer[1] = {0};
     unsigned long location = 0;
@@ -298,17 +377,17 @@ bool CCImage::_initWithJpgData(void * data, int nSize)
     do 
     {
         /* We set up the normal JPEG error routines, then override error_exit. */
-		cinfo.err = jpeg_std_error(&jerr.pub);
-		jerr.pub.error_exit = my_error_exit;
-		/* Establish the setjmp return context for my_error_exit to use. */
-		if (setjmp(jerr.setjmp_buffer)) {
-			/* If we get here, the JPEG code has signaled an error.
-			 * We need to clean up the JPEG object, close the input file, and return.
-			 */
-			CCLog("%d", bRet);
-			jpeg_destroy_decompress(&cinfo);
-			break;
-		}
+        cinfo.err = jpeg_std_error(&jerr.pub);
+        jerr.pub.error_exit = my_error_exit;
+        /* Establish the setjmp return context for my_error_exit to use. */
+        if (setjmp(jerr.setjmp_buffer)) {
+            /* If we get here, the JPEG code has signaled an error.
+             * We need to clean up the JPEG object, close the input file, and return.
+             */
+            CCLog("%d", bRet);
+            jpeg_destroy_decompress(&cinfo);
+            break;
+        }
 
         /* setup decompression process and source, then read JPEG header */
         jpeg_create_decompress( &cinfo );
@@ -362,12 +441,12 @@ bool CCImage::_initWithJpgData(void * data, int nSize)
             }
         }
 
-		/* When read image file with broken data, jpeg_finish_decompress() may cause error.
-		 * Besides, jpeg_destroy_decompress() shall deallocate and release all memory associated
-		 * with the decompression object.
-		 * So it doesn't need to call jpeg_finish_decompress().
-		 */
-		//jpeg_finish_decompress( &cinfo );
+        /* When read image file with broken data, jpeg_finish_decompress() may cause error.
+         * Besides, jpeg_destroy_decompress() shall deallocate and release all memory associated
+         * with the decompression object.
+         * So it doesn't need to call jpeg_finish_decompress().
+         */
+        //jpeg_finish_decompress( &cinfo );
         jpeg_destroy_decompress( &cinfo );
         /* wrap up decompression, destroy objects, free pointers and close open files */        
         bRet = true;

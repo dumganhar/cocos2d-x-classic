@@ -73,7 +73,16 @@ void CCLabelTTFLoader::onHandlePropTypeIntegerLabeled(CCNode * pNode, CCNode * p
 }
 
 void CCLabelTTFLoader::onHandlePropTypeSize(CCNode * pNode, CCNode * pParent, const char * pPropertyName, CCSize pSize, CCBReader * pCCBReader) {
-    if(strcmp(pPropertyName, PROPERTY_DIMENSIONS) == 0) {
+	if(strcmp(pPropertyName, PROPERTY_DIMENSIONS) == 0) {
+
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_WIN32)
+		if ((pSize.width == 0 && pSize.height > 0)
+			||(pSize.width > 0 && pSize.height == 0))
+		{
+			CCAssert(false, "Invalid Dimensions");//设置其中一边为0而另一边不为0的话，在android中可能无法正确显示。
+		}
+#endif
+
         ((CCLabelTTF *)pNode)->setDimensions(pSize);
     } else {
         CCNodeLoader::onHandlePropTypeSize(pNode, pParent, pPropertyName, pSize, pCCBReader);

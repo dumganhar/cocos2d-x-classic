@@ -77,8 +77,8 @@ static const int CC_EDIT_BOX_PADDING = 5;
         textField_.backgroundColor = [UIColor clearColor];
         textField_.borderStyle = UITextBorderStyleNone;
         textField_.delegate = self;
+        textField_.returnKeyType = UIReturnKeyDefault;
         textField_.hidden = true;
-		textField_.returnKeyType = UIReturnKeyDefault;
         [textField_ addTarget:self action:@selector(textChanged) forControlEvents:UIControlEventEditingChanged];
         self.editBox = editBox;
         
@@ -305,12 +305,16 @@ void CCEditBoxImplIOS::initInactiveLabels(const CCSize& size)
     m_pLabel->setAnchorPoint(ccp(0, 0.5f));
     m_pLabel->setColor(ccWHITE);
     m_pLabel->setVisible(false);
+	m_pLabel->setHorizontalAlignment(kCCTextAlignmentLeft);
+	m_pLabel->setDimensions(size);
     m_pEditBox->addChild(m_pLabel, kLabelZOrder);
 	
     m_pLabelPlaceHolder = CCLabelTTF::create("", "", 0.0f);
 	// align the text vertically center
     m_pLabelPlaceHolder->setAnchorPoint(ccp(0, 0.5f));
     m_pLabelPlaceHolder->setColor(ccGRAY);
+	m_pLabelPlaceHolder->setHorizontalAlignment(kCCTextAlignmentLeft);
+	m_pLabelPlaceHolder->setDimensions(size);
     m_pEditBox->addChild(m_pLabelPlaceHolder, kLabelZOrder);
     
     setFont(pDefaultFontName, size.height*2/3);
@@ -591,12 +595,16 @@ void CCEditBoxImplIOS::openKeyboard()
 	m_pLabelPlaceHolder->setVisible(false);
 
 	m_systemControl.textField.hidden = NO;
+    adjustTextFieldPosition();//文本输入框位置
     [m_systemControl openKeyboard];
 }
 
 void CCEditBoxImplIOS::closeKeyboard()
 {
     [m_systemControl closeKeyboard];
+	// clear touch event 
+	// controllbutton and keyboard are conflict 。 so close keyboard  clear event
+	 CCEGLView::sharedOpenGLView()->clearTouchEvent();
 }
 
 void CCEditBoxImplIOS::onEndEditing()

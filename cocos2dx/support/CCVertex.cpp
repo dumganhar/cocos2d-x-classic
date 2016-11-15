@@ -29,7 +29,7 @@
 
 NS_CC_BEGIN
 
-void ccVertexLineToPolygon(CCPoint *points, float stroke, ccVertex2F *vertices, unsigned int offset, unsigned int nuPoints)
+void ccVertexLineToPolygon(CCPoint *points, float stroke, ccVertex2F *vertices, unsigned int offset, unsigned int nuPoints, bool bJudgeValid)
 {
     nuPoints += offset;
     if(nuPoints<=1) return;
@@ -74,31 +74,35 @@ void ccVertexLineToPolygon(CCPoint *points, float stroke, ccVertex2F *vertices, 
 
     }
 
-    // Validate vertexes
-    offset = (offset==0) ? 0 : offset-1;
-    for(unsigned int i = offset; i<nuPointsMinus; i++)
-    {
-        idx = i*2;
-        const unsigned int idx1 = idx+2;
+	if (bJudgeValid)
+	{
+		// Validate vertexes
+		offset = (offset==0) ? 0 : offset-1;
+		for(unsigned int i = offset; i<nuPointsMinus; i++)
+		{
+			idx = i*2;
+			const unsigned int idx1 = idx+2;
 
-        ccVertex2F p1 = vertices[idx];
-        ccVertex2F p2 = vertices[idx+1];
-        ccVertex2F p3 = vertices[idx1];
-        ccVertex2F p4 = vertices[idx1+1];
+			ccVertex2F p1 = vertices[idx];
+			ccVertex2F p2 = vertices[idx+1];
+			ccVertex2F p3 = vertices[idx1];
+			ccVertex2F p4 = vertices[idx1+1];
 
-        float s;
-        //BOOL fixVertex = !ccpLineIntersect(ccp(p1.x, p1.y), ccp(p4.x, p4.y), ccp(p2.x, p2.y), ccp(p3.x, p3.y), &s, &t);
-        bool fixVertex = !ccVertexLineIntersect(p1.x, p1.y, p4.x, p4.y, p2.x, p2.y, p3.x, p3.y, &s);
-        if(!fixVertex)
-            if (s<0.0f || s>1.0f)
-                fixVertex = true;
+			float s;
+			//BOOL fixVertex = !ccpLineIntersect(ccp(p1.x, p1.y), ccp(p4.x, p4.y), ccp(p2.x, p2.y), ccp(p3.x, p3.y), &s, &t);
+			bool fixVertex = !ccVertexLineIntersect(p1.x, p1.y, p4.x, p4.y, p2.x, p2.y, p3.x, p3.y, &s);
+			if(!fixVertex)
+				if (s<0.0f || s>1.0f)
+					fixVertex = true;
 
-        if(fixVertex)
-        {
-            vertices[idx1] = p4;
-            vertices[idx1+1] = p3;
-        }
-    }
+			if(fixVertex)
+			{
+				vertices[idx1] = p4;
+				vertices[idx1+1] = p3;
+			}
+		}
+	}
+	
 }
 
 bool ccVertexLineIntersect(float Ax, float Ay,

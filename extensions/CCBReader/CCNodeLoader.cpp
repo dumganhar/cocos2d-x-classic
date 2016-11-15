@@ -37,6 +37,8 @@ void CCNodeLoader::parseProperties(CCNode * pNode, CCNode * pParent, CCBReader *
     int numExturaProps = pCCBReader->readInt(false);
     int propertyCount = numRegularProps + numExturaProps;
 
+//    CCLog("[CCNodeLoader::parseProperties] 1 numRegularProps=(%d)  numExturaProps=(%d)", numRegularProps, numExturaProps);
+
     for(int i = 0; i < propertyCount; i++) {
         bool isExtraProp = (i >= numRegularProps);
         int type = pCCBReader->readInt(false);
@@ -64,6 +66,8 @@ void CCNodeLoader::parseProperties(CCNode * pNode, CCNode * pParent, CCBReader *
 //             setProp = true;
 //         }
 // #endif
+//         CCLog("[CCNodeLoader::parseProperties] 2");
+
         
         // Forward properties for sub ccb files
         if (dynamic_cast<CCBFile*>(pNode) != NULL)
@@ -100,6 +104,9 @@ void CCNodeLoader::parseProperties(CCNode * pNode, CCNode * pParent, CCBReader *
             
             extraPropsNames->addObject(CCString::create(propertyName));
         }
+
+//        CCLog("[CCNodeLoader::parseProperties] 3 (%d): type=(%d), propName=(%s)",
+//            i, type, propertyName.c_str());
 
         switch(type) 
         {
@@ -318,9 +325,11 @@ void CCNodeLoader::parseProperties(CCNode * pNode, CCNode * pParent, CCBReader *
             }
             case kCCBPropTypeText: {
                 std::string text = this->parsePropTypeText(pNode, pParent, pCCBReader);
+//                CCLog("Parse text=(%s)", text.c_str());
                 if(setProp) {
                     this->onHandlePropTypeText(pNode, pParent, propertyName.c_str(), text.c_str(), pCCBReader);
-                }
+//                    CCLog("Parse text end");
+                }                
                 break;
             }
             case kCCBPropTypeBlock: {
@@ -350,6 +359,8 @@ void CCNodeLoader::parseProperties(CCNode * pNode, CCNode * pParent, CCBReader *
                 ASSERT_FAIL_UNEXPECTED_PROPERTYTYPE(type);
                 break;
         }
+
+//        CCLog("[CCNodeLoader::parseProperties] 4");
     }
 }
 
@@ -558,6 +569,25 @@ CCSpriteFrame * CCNodeLoader::parsePropTypeSpriteFrame(CCNode * pNode, CCNode * 
 {
     std::string spriteSheet = pCCBReader->readCachedString();
     std::string spriteFile = pCCBReader->readCachedString();
+
+	if (!spriteSheet.empty())
+	{
+		size_t pos = spriteSheet.find_last_of('/');
+		if (std::string::npos != pos && pos != spriteSheet.size() - 1)
+		{
+			spriteSheet = spriteSheet.substr(pos + 1);
+		}
+	}
+
+	if (!spriteFile.empty())
+	{
+		size_t pos = spriteFile.find_last_of('/');
+		if (std::string::npos != pos && pos != spriteFile.size() - 1)
+		{
+			spriteFile = spriteFile.substr(pos + 1);
+		}
+	}
+	
     
     CCSpriteFrame *spriteFrame = NULL;
     if (spriteFile.length() != 0)
@@ -566,10 +596,23 @@ CCSpriteFrame * CCNodeLoader::parsePropTypeSpriteFrame(CCNode * pNode, CCNode * 
         {
             spriteFile = pCCBReader->getCCBRootPath() + spriteFile;
             CCTexture2D * texture = CCTextureCache::sharedTextureCache()->addImage(spriteFile.c_str());
-            if(texture != NULL) {
+            if(texture != NULL)
+			{
                 CCRect bounds = CCRectMake(0, 0, texture->getContentSize().width, texture->getContentSize().height);
                 spriteFrame = CCSpriteFrame::createWithTexture(texture, bounds);
             }
+			else
+			{
+				CCSpriteFrameCache * frameCache = CCSpriteFrameCache::sharedSpriteFrameCache();
+				spriteFrame = frameCache->spriteFrameByName(spriteFile.c_str());
+				if (NULL != spriteFrame)
+				{
+					//描述：请看堆栈上下文，如果是加载特效时断言失效，请检查是否是特效图片整理导致。
+					//原因：可能是cocosbuilder导出失败，已经被拼图了但是ccb没有导出成功
+					//联系人： gusterzhai/mengmengwan 都可以 10/12/2015
+					assert(false);
+				}				
+			}
         }
         else 
         {
@@ -587,10 +630,20 @@ CCSpriteFrame * CCNodeLoader::parsePropTypeSpriteFrame(CCNode * pNode, CCNode * 
         
         if (pCCBReader->getAnimatedProperties()->find(pPropertyName) != pCCBReader->getAnimatedProperties()->end())
         {
-            pCCBReader->getAnimationManager()->setBaseValue(spriteFrame, pNode, pPropertyName);
+			if (NULL != spriteFrame)
+			{
+				pCCBReader->getAnimationManager()->setBaseValue(spriteFrame, pNode, pPropertyName);
+			}            
         }
     }
     
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_WIN32)
+	if (spriteFile.length() != 0)
+	{
+		//assert(NULL != spriteFrame);
+	}	
+#endif
+
     return spriteFrame;
 }
 
@@ -618,12 +671,48 @@ CCAnimation * CCNodeLoader::parsePropTypeAnimation(CCNode * pNode, CCNode * pPar
     return ccAnimation;
 }
 
-CCTexture2D * CCNodeLoader::parsePropTypeTexture(CCNode * pNode, CCNode * pParent, CCBReader * pCCBReader) {
+CCTexture2D* CCNodeLoader::parsePropTypeTexture(CCNode * pNode, CCNode * pParent, CCBReader * pCCBReader) {
     std::string spriteFile = pCCBReader->getCCBRootPath() + pCCBReader->readCachedString();
     
     if (spriteFile.length() > 0)
     {
-        return CCTextureCache::sharedTextureCache()->addImage(spriteFile.c_str());
+        CCTexture2D* texture = CCTextureCache::sharedTextureCache()->addImage(spriteFile.c_str());
+		if (NULL == texture)
+		{
+			if (!spriteFile.empty())
+			{
+				size_t pos = spriteFile.find_last_of('/');
+				if (std::string::npos != pos && pos != spriteFile.size() - 1)
+				{
+					spriteFile = spriteFile.substr(pos + 1);
+					texture = CCTextureCache::sharedTextureCache()->addImage(spriteFile.c_str());
+					if (NULL != texture)
+					{
+						//ccb中图片路径错误， 这里是保护性代码
+						assert(false);
+					}
+				}
+			}
+			
+			if (NULL == texture)
+			{
+				CCSpriteFrameCache* frameCache = CCSpriteFrameCache::sharedSpriteFrameCache();
+				CCSpriteFrame* spriteFrame = frameCache->spriteFrameByName(spriteFile.c_str());
+				if (NULL != spriteFrame)
+				{
+					//描述：请看堆栈上下文，如果是加载特效时断言失效，请检查是否是特效图片整理导致。
+					//原因：可能是粒子系统使用的独立图片被拼图了
+					//联系人： gusterzhai/mengmengwan 都可以 10/12/2015
+					assert(false);
+				}			
+			}	
+		}
+
+		//图片资源找不到
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_WIN32)
+		assert(NULL != texture);
+#endif
+		return texture;		
     }
     else 
     {

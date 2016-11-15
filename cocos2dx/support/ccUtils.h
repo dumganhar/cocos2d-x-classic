@@ -24,6 +24,8 @@ THE SOFTWARE.
 #ifndef __SUPPORT_CC_UTILS_H__
 #define __SUPPORT_CC_UTILS_H__
 
+#include <string>
+
 /** @file ccUtils.h
 Misc free functions
 */
@@ -44,6 +46,32 @@ Examples:
 */
 
 unsigned long ccNextPOT( unsigned long value );
+
+/** return file name from path
+
+Examples:
+- If "filePath" is image/background.png, it will return background.
+
+@bobding
+*/
+
+std::string ccFileName(const std::string& filePath);
+
+/** return hash code
+
+@bobding
+*/
+int ccHash(const char* s);
+
+/** return bit rand
+
+@bobding
+*/
+
+char ccBitrand(char byte);
+
+template<class T>
+void ccToString(std::string& result, const T& t);
 
 }
 

@@ -78,7 +78,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
-      <DisableSpecificWarnings>4267;4251;4244;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4996;4819;4251;4510;4512;4610;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <PreLinkEvent>
       <Command>if not exist "$(OutDir)" mkdir "$(OutDir)"
@@ -140,6 +140,7 @@ xcopy /Y /Q "$(ProjectDir)..\platform\third_party\win32\libraries\*.*" "$(OutDir
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\base_nodes\CCAtlasNode.cpp" />
+    <ClCompile Include="..\base_nodes\CCBatchNodeMgr.cpp" />
     <ClCompile Include="..\base_nodes\CCNode.cpp" />
     <ClCompile Include="..\ccFPSImages.c" />
     <ClCompile Include="..\cocoa\CCAffineTransform.cpp" />
@@ -170,6 +171,7 @@ xcopy /Y /Q "$(ProjectDir)..\platform\third_party\win32\libraries\*.*" "$(OutDir
     <ClCompile Include="..\actions\CCActionProgressTimer.cpp" />
     <ClCompile Include="..\actions\CCActionTiledGrid.cpp" />
     <ClCompile Include="..\actions\CCActionTween.cpp" />
+    <ClCompile Include="..\include\xxhash.c" />
     <ClCompile Include="..\label_nodes\CCLabelAtlas.cpp" />
     <ClCompile Include="..\label_nodes\CCLabelBMFont.cpp" />
     <ClCompile Include="..\label_nodes\CCLabelTTF.cpp" />
@@ -187,9 +189,12 @@ xcopy /Y /Q "$(ProjectDir)..\platform\third_party\win32\libraries\*.*" "$(OutDir
     <ClCompile Include="..\particle_nodes\CCParticleBatchNode.cpp" />
     <ClCompile Include="..\particle_nodes\CCParticleExamples.cpp" />
     <ClCompile Include="..\particle_nodes\CCParticleSystem.cpp" />
+    <ClCompile Include="..\particle_nodes\CCParticleSystemEx.cpp" />
     <ClCompile Include="..\particle_nodes\CCParticleSystemQuad.cpp" />
+    <ClCompile Include="..\particle_nodes\CCParticleSystemQuadEx.cpp" />
     <ClCompile Include="..\platform\CCEGLViewProtocol.cpp" />
     <ClCompile Include="..\platform\CCFileUtils.cpp" />
+    <ClCompile Include="..\platform\CCImageCommonPVR.cpp" />
     <ClCompile Include="..\platform\CCImageCommonWebp.cpp" />
     <ClCompile Include="..\platform\CCSAXParser.cpp" />
     <ClCompile Include="..\platform\CCThread.cpp" />
@@ -202,6 +207,12 @@ xcopy /Y /Q "$(ProjectDir)..\platform\third_party\win32\libraries\*.*" "$(OutDir
     <ClCompile Include="..\platform\win32\CCFileUtilsWin32.cpp" />
     <ClCompile Include="..\platform\win32\CCImage.cpp" />
     <ClCompile Include="..\platform\win32\CCStdC.cpp" />
+    <ClCompile Include="..\renderer\CCBatchCommand.cpp" />
+    <ClCompile Include="..\renderer\CCCustomCommand.cpp" />
+    <ClCompile Include="..\renderer\CCGroupCommand.cpp" />
+    <ClCompile Include="..\renderer\CCQuadCommand.cpp" />
+    <ClCompile Include="..\renderer\CCRenderCommand.cpp" />
+    <ClCompile Include="..\renderer\CCRenderer.cpp" />
     <ClCompile Include="..\shaders\CCGLProgram.cpp" />
     <ClCompile Include="..\shaders\ccGLStateCache.cpp" />
     <ClCompile Include="..\shaders\CCShaderCache.cpp" />
@@ -213,8 +224,11 @@ xcopy /Y /Q "$(ProjectDir)..\platform\third_party\win32\libraries\*.*" "$(OutDir
     <ClCompile Include="..\sprite_nodes\CCSpriteFrame.cpp" />
     <ClCompile Include="..\sprite_nodes\CCSpriteFrameCache.cpp" />
     <ClCompile Include="..\support\base64.cpp" />
+    <ClCompile Include="..\support\CCCallNode.cpp" />
+    <ClCompile Include="..\support\CCCallTree.cpp" />
     <ClCompile Include="..\support\CCNotificationCenter.cpp" />
     <ClCompile Include="..\support\CCPointExtension.cpp" />
+    <ClCompile Include="..\support\CCProfilerLog.cpp" />
     <ClCompile Include="..\support\CCProfiling.cpp" />
     <ClCompile Include="..\support\ccUTF8.cpp" />
     <ClCompile Include="..\support\ccUtils.cpp" />
@@ -229,6 +243,7 @@ xcopy /Y /Q "$(ProjectDir)..\platform\third_party\win32\libraries\*.*" "$(OutDir
     <ClCompile Include="..\support\zip_support\ioapi.cpp" />
     <ClCompile Include="..\support\zip_support\unzip.cpp" />
     <ClCompile Include="..\support\zip_support\ZipUtils.cpp" />
+    <ClCompile Include="..\textures\CCPVRParzer.cpp" />
     <ClCompile Include="..\textures\CCTexture2D.cpp" />
     <ClCompile Include="..\textures\CCTextureAtlas.cpp" />
     <ClCompile Include="..\textures\CCTextureCache.cpp" />
@@ -269,6 +284,7 @@ xcopy /Y /Q "$(ProjectDir)..\platform\third_party\win32\libraries\*.*" "$(OutDir
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\base_nodes\CCAtlasNode.h" />
+    <ClInclude Include="..\base_nodes\CCBatchNodeMgr.h" />
     <ClInclude Include="..\base_nodes\CCNode.h" />
     <ClInclude Include="..\ccFPSImages.h" />
     <ClInclude Include="..\cocoa\CCAffineTransform.h" />
@@ -309,6 +325,7 @@ xcopy /Y /Q "$(ProjectDir)..\platform\third_party\win32\libraries\*.*" "$(OutDir
     <ClInclude Include="..\include\CCProtocols.h" />
     <ClInclude Include="..\include\ccTypes.h" />
     <ClInclude Include="..\include\cocos2d.h" />
+    <ClInclude Include="..\include\xxhash.h" />
     <ClInclude Include="..\label_nodes\CCLabelAtlas.h" />
     <ClInclude Include="..\label_nodes\CCLabelBMFont.h" />
     <ClInclude Include="..\label_nodes\CCLabelTTF.h" />
@@ -326,7 +343,9 @@ xcopy /Y /Q "$(ProjectDir)..\platform\third_party\win32\libraries\*.*" "$(OutDir
     <ClInclude Include="..\particle_nodes\CCParticleBatchNode.h" />
     <ClInclude Include="..\particle_nodes\CCParticleExamples.h" />
     <ClInclude Include="..\particle_nodes\CCParticleSystem.h" />
+    <ClInclude Include="..\particle_nodes\CCParticleSystemEx.h" />
     <ClInclude Include="..\particle_nodes\CCParticleSystemQuad.h" />
+    <ClInclude Include="..\particle_nodes\CCParticleSystemQuadEx.h" />
     <ClInclude Include="..\platform\CCAccelerometerDelegate.h" />
     <ClInclude Include="..\platform\CCApplicationProtocol.h" />
     <ClInclude Include="..\platform\CCCommon.h" />
@@ -346,6 +365,13 @@ xcopy /Y /Q "$(ProjectDir)..\platform\third_party\win32\libraries\*.*" "$(OutDir
     <ClInclude Include="..\platform\win32\CCGL.h" />
     <ClInclude Include="..\platform\win32\CCPlatformDefine.h" />
     <ClInclude Include="..\platform\win32\CCStdC.h" />
+    <ClInclude Include="..\renderer\CCBatchCommand.h" />
+    <ClInclude Include="..\renderer\CCCustomCommand.h" />
+    <ClInclude Include="..\renderer\CCGroupCommand.h" />
+    <ClInclude Include="..\renderer\CCQuadCommand.h" />
+    <ClInclude Include="..\renderer\CCRenderCommand.h" />
+    <ClInclude Include="..\renderer\CCRenderCommandPool.h" />
+    <ClInclude Include="..\renderer\CCRenderer.h" />
     <ClInclude Include="..\shaders\CCGLProgram.h" />
     <ClInclude Include="..\shaders\ccGLStateCache.h" />
     <ClInclude Include="..\shaders\CCShaderCache.h" />
@@ -373,8 +399,11 @@ xcopy /Y /Q "$(ProjectDir)..\platform\third_party\win32\libraries\*.*" "$(OutDir
     <ClInclude Include="..\sprite_nodes\CCSpriteFrame.h" />
     <ClInclude Include="..\sprite_nodes\CCSpriteFrameCache.h" />
     <ClInclude Include="..\support\base64.h" />
+    <ClInclude Include="..\support\CCCallNode.h" />
+    <ClInclude Include="..\support\CCCallTree.h" />
     <ClInclude Include="..\support\CCNotificationCenter.h" />
     <ClInclude Include="..\support\CCPointExtension.h" />
+    <ClInclude Include="..\support\CCProfilerLog.h" />
     <ClInclude Include="..\support\CCProfiling.h" />
     <ClInclude Include="..\support\ccUTF8.h" />
     <ClInclude Include="..\support\ccUtils.h" />
@@ -391,6 +420,7 @@ xcopy /Y /Q "$(ProjectDir)..\platform\third_party\win32\libraries\*.*" "$(OutDir
     <ClInclude Include="..\support\zip_support\ioapi.h" />
     <ClInclude Include="..\support\zip_support\unzip.h" />
     <ClInclude Include="..\support\zip_support\ZipUtils.h" />
+    <ClInclude Include="..\textures\CCPVRParzer.h" />
     <ClInclude Include="..\textures\CCTexture2D.h" />
     <ClInclude Include="..\textures\CCTextureAtlas.h" />
     <ClInclude Include="..\textures\CCTextureCache.h" />

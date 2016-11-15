@@ -717,9 +717,9 @@ void CCLabelBMFont::createFontChars()
     }
     else
     {
-        tmpSize.width = longestLine;
+        tmpSize.width = (float)longestLine;
     }
-    tmpSize.height = totalHeight;
+    tmpSize.height = (float)totalHeight;
 
     this->setContentSize(CC_SIZE_PIXELS_TO_POINTS(tmpSize));
 }
@@ -866,7 +866,7 @@ bool CCLabelBMFont::isOpacityModifyRGB()
 
 void CCLabelBMFont::updateDisplayedOpacity(GLubyte parentOpacity)
 {
-	m_cDisplayedOpacity = m_cRealOpacity * parentOpacity/255.0;
+	m_cDisplayedOpacity = GLubyte(m_cRealOpacity * parentOpacity/255.0);
     
 	CCObject* pObj;
 	CCARRAY_FOREACH(m_pChildren, pObj)
@@ -878,9 +878,9 @@ void CCLabelBMFont::updateDisplayedOpacity(GLubyte parentOpacity)
 
 void CCLabelBMFont::updateDisplayedColor(const ccColor3B& parentColor)
 {
-	m_tDisplayedColor.r = m_tRealColor.r * parentColor.r/255.0;
-	m_tDisplayedColor.g = m_tRealColor.g * parentColor.g/255.0;
-	m_tDisplayedColor.b = m_tRealColor.b * parentColor.b/255.0;
+	m_tDisplayedColor.r = GLubyte(m_tRealColor.r * parentColor.r/255.0);
+	m_tDisplayedColor.g = GLubyte(m_tRealColor.g * parentColor.g/255.0);
+	m_tDisplayedColor.b = GLubyte(m_tRealColor.b * parentColor.b/255.0);
     
     CCObject* pObj;
 	CCARRAY_FOREACH(m_pChildren, pObj)
@@ -1232,12 +1232,16 @@ const char* CCLabelBMFont::getFntFile()
 {
     return m_sFntFile.c_str();
 }
-
+CCBMFontConfiguration* CCLabelBMFont::getConfiguration()
+{
+	return m_pConfiguration;
+}
 
 //LabelBMFont - Debug draw
 #if CC_LABELBMFONT_DEBUG_DRAW
 void CCLabelBMFont::draw()
 {
+	CC_PROFILER_HELPER;
     CCSpriteBatchNode::draw();
     const CCSize& s = this->getContentSize();
     CCPoint vertices[4]={

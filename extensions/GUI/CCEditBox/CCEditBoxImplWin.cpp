@@ -66,6 +66,9 @@ bool CCEditBoxImplWin::initWithSize(const CCSize& size)
     m_pLabel->setAnchorPoint(ccp(0, 0.5f));
     m_pLabel->setPosition(ccp(5, size.height / 2.0f));
     m_pLabel->setColor(m_colText);
+	//好像输入的时候都是左对齐吧。 应该不需要默认为中间的吧
+	m_pLabel->setHorizontalAlignment(kCCTextAlignmentLeft);
+	m_pLabel->setDimensions(size);
     m_pEditBox->addChild(m_pLabel);
 
     m_pLabelPlaceHolder = CCLabelTTF::create("", "", size.height-12);
@@ -74,6 +77,8 @@ bool CCEditBoxImplWin::initWithSize(const CCSize& size)
     m_pLabelPlaceHolder->setPosition(ccp(5, size.height / 2.0f));
     m_pLabelPlaceHolder->setVisible(false);
     m_pLabelPlaceHolder->setColor(m_colPlaceHolder);
+	m_pLabelPlaceHolder->setHorizontalAlignment(kCCTextAlignmentLeft);
+	m_pLabelPlaceHolder->setDimensions(size);
     m_pEditBox->addChild(m_pLabelPlaceHolder);
     
     m_EditSize = size;
@@ -263,11 +268,11 @@ void CCEditBoxImplWin::openKeyboard()
 	if (placeHolder.length() == 0)
 		placeHolder = "Enter value";
 
-	char pText[100]= {0};
+	char pText[1024]= {0};
 	std::string text = getText();
 	if (text.length())
-		strncpy(pText, text.c_str(), 100);
-	bool didChange = CWin32InputBox::InputBox("Input", placeHolder.c_str(), pText, 100, false) == IDOK;
+		strncpy(pText, text.c_str(), 1024);
+	bool didChange = CWin32InputBox::InputBox("Input", placeHolder.c_str(), pText, 1024, false) == IDOK;
 	
 	if (didChange) 	
 		setText(pText);

@@ -121,6 +121,8 @@ THE SOFTWARE.
 #include "particle_nodes/CCParticleSystem.h"
 #include "particle_nodes/CCParticleExamples.h"
 #include "particle_nodes/CCParticleSystemQuad.h"
+#include "particle_nodes/CCParticleSystemEx.h"
+#include "particle_nodes/CCParticleSystemQuadEx.h"
 
 // platform
 #include "platform/CCDevice.h"
@@ -240,6 +242,7 @@ THE SOFTWARE.
 #include "support/user_default/CCUserDefault.h"
 #include "support/CCVertex.h"
 #include "support/tinyxml2/tinyxml2.h"
+#include "support/component/CCComponent.h"
 
 // text_input_node
 #include "text_input_node/CCIMEDelegate.h"

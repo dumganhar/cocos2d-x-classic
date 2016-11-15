@@ -26,6 +26,7 @@ actions/CCActionTiledGrid.cpp \
 actions/CCActionTween.cpp \
 base_nodes/CCAtlasNode.cpp \
 base_nodes/CCNode.cpp \
+base_nodes/CCBatchNodeMgr.cpp \
 cocoa/CCAffineTransform.cpp \
 cocoa/CCGeometry.cpp \
 cocoa/CCAutoreleasePool.cpp \
@@ -73,10 +74,13 @@ misc_nodes/CCMotionStreak.cpp \
 misc_nodes/CCProgressTimer.cpp \
 misc_nodes/CCRenderTexture.cpp \
 particle_nodes/CCParticleExamples.cpp \
+particle_nodes/CCParticleSystemEx.cpp \
 particle_nodes/CCParticleSystem.cpp \
 particle_nodes/CCParticleBatchNode.cpp \
+particle_nodes/CCParticleSystemQuadEx.cpp \
 particle_nodes/CCParticleSystemQuad.cpp \
 platform/CCImageCommonWebp.cpp \
+platform/CCImageCommonPVR.cpp \
 platform/CCSAXParser.cpp \
 platform/CCThread.cpp \
 platform/CCFileUtils.cpp \
@@ -113,6 +117,9 @@ support/ccUTF8.cpp \
 support/CCNotificationCenter.cpp \
 support/CCProfiling.cpp \
 support/CCPointExtension.cpp \
+support/CCProfilerLog.cpp \
+support/CCCallTree.cpp \
+support/CCCallNode.cpp \
 support/TransformUtils.cpp \
 support/user_default/CCUserDefaultAndroid.cpp \
 support/base64.cpp \
@@ -133,6 +140,7 @@ textures/CCTextureAtlas.cpp \
 textures/CCTextureCache.cpp \
 textures/CCTextureETC.cpp \
 textures/CCTexturePVR.cpp \
+textures/CCPVRParzer.cpp \
 tilemap_parallax_nodes/CCParallaxNode.cpp \
 tilemap_parallax_nodes/CCTMXLayer.cpp \
 tilemap_parallax_nodes/CCTMXObjectGroup.cpp \
@@ -171,6 +179,12 @@ LOCAL_WHOLE_STATIC_LIBRARIES += cocos_libwebp_static
 # define the macro to compile through support/zip_support/ioapi.c
 LOCAL_CFLAGS := -Wno-psabi -DUSE_FILE32API
 LOCAL_EXPORT_CFLAGS := -Wno-psabi -DUSE_FILE32API
+
+#android-ndk-profiler
+ifeq ($(APP_PROFILE),true)
+  LOCAL_CFLAGS += -pg
+  LOCAL_CFLAGS += -fno-omit-frame-pointer
+endif
 
 include $(BUILD_STATIC_LIBRARY)
 

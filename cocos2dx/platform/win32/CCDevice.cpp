@@ -12,7 +12,7 @@ int CCDevice::getDPI()
         int PixelsX = GetDeviceCaps( hScreenDC, HORZRES );
         int MMX = GetDeviceCaps( hScreenDC, HORZSIZE );
         ReleaseDC( NULL, hScreenDC );   
-        dpi = 254.0f*PixelsX/MMX/10;
+        dpi = (int)(254.0f*PixelsX/MMX/10);
     }
     return dpi;
 }

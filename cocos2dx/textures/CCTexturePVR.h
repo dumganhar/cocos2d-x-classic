@@ -30,40 +30,9 @@ THE SOFTWARE.
 #include "CCGL.h"
 #include "cocoa/CCObject.h"
 #include "cocoa/CCArray.h"
+#include "CCPVRParzer.h"
 
 NS_CC_BEGIN
-
-/**
- * @addtogroup textures
- * @{
- */
-
-/**
- @brief Structure which can tell where mipmap begins and how long is it
-*/
-struct CCPVRMipmap {
-    unsigned char *address;
-    unsigned int len;
-};
-
-typedef struct _ccPVRTexturePixelFormatInfo {
-	GLenum internalFormat;
-	GLenum format;
-	GLenum type;
-	uint32_t bpp;
-	bool compressed;
-	bool alpha;
-	CCTexture2DPixelFormat ccPixelFormat;
-} ccPVRTexturePixelFormatInfo;
-
-/**
- @brief Determine how many mipmaps can we have. 
- Its same as define but it respects namespaces
-*/
-enum {
-    CC_PVRMIPMAP_MAX = 16,
-};
-
 
 /** CCTexturePVR
      
@@ -101,44 +70,32 @@ public:
     
     // properties 
     
-    /** texture id name */
-    inline unsigned int getName() { return m_uName; }
     /** texture width */
-    inline unsigned int getWidth() { return m_uWidth; }
+    inline unsigned int getWidth() { return m_PVRParzer.getWidth(); }
     /** texture height */
-    inline unsigned int getHeight() { return m_uHeight; }
+    inline unsigned int getHeight() { return m_PVRParzer.getHeight(); }
     /** whether or not the texture has alpha */
-    inline bool hasAlpha() { return m_bHasAlpha; }
+    inline bool hasAlpha() { return m_PVRParzer.hasAlpha(); }
     /** whether or not the texture has premultiplied alpha */
-    inline bool hasPremultipliedAlpha() { return m_bHasPremultipliedAlpha; }
+    inline bool hasPremultipliedAlpha() { return m_PVRParzer.hasPremultipliedAlpha(); }
     /** whether or not the texture should use hasPremultipliedAlpha instead of global default */
-    inline bool isForcePremultipliedAlpha() { return m_bForcePremultipliedAlpha; }
+    inline bool isForcePremultipliedAlpha() { return m_PVRParzer.isForcePremultipliedAlpha(); }
     /** how many mipmaps the texture has. 1 means one level (level 0 */
-    inline unsigned int getNumberOfMipmaps() { return m_uNumberOfMipmaps; }
-    inline CCTexture2DPixelFormat getFormat() { return m_eFormat; }
-    inline bool isRetainName() { return m_bRetainName; }
-    inline void setRetainName(bool retainName) { m_bRetainName = retainName; }
+    inline unsigned int getNumberOfMipmaps() { return m_PVRParzer.getNumberOfMipmaps(); }
+    inline CCPVRMipmap* getMipmaps() { return m_PVRParzer.getMipmaps(); }
+    inline GLenum getInternalFormat() const { return m_PVRParzer.getInternalFormat(); }
+    inline GLenum getPixelDataFormat() const { return m_PVRParzer.getPixelDataFormat(); }
+    inline GLenum getPixelDataType() const { return m_PVRParzer.getPixelDataType(); }
+    inline bool isCompressed() const { return m_PVRParzer.isCompressed(); }
+    inline CCTexture2DPixelFormat getFormat() { return m_PVRParzer.getFormat(); }
 
 private:
     bool unpackPVRv2Data(unsigned char* data, unsigned int len);
     bool unpackPVRv3Data(unsigned char* dataPointer, unsigned int dataLength);
-    bool createGLTexture();
     
 protected:
-    struct CCPVRMipmap m_asMipmaps[CC_PVRMIPMAP_MAX];   // pointer to mipmap images    
-    unsigned int m_uNumberOfMipmaps;                    // number of mipmap used
-    
-    unsigned int m_uWidth, m_uHeight;
-    GLuint m_uName;
-    bool m_bHasAlpha;
-    bool m_bHasPremultipliedAlpha;
-    bool m_bForcePremultipliedAlpha;
-    
-    // cocos2d integration
-    bool m_bRetainName;
-    CCTexture2DPixelFormat m_eFormat;
-    
-   const ccPVRTexturePixelFormatInfo *m_pPixelFormatInfo;
+    CCPVRParzer m_PVRParzer;
+    unsigned char* m_PvrData;
 };
 
 // end of textures group

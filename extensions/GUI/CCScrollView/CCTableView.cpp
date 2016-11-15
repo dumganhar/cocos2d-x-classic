@@ -74,6 +74,9 @@ CCTableView::CCTableView()
 , m_pDataSource(NULL)
 , m_pTableViewDelegate(NULL)
 , m_eOldDirection(kCCScrollViewDirectionNone)
+, m_bAutoScrollSize(0)
+, m_bInAnimation(false)
+, m_iPageTarget(0)
 {
 
 }
@@ -89,7 +92,7 @@ void CCTableView::setVerticalFillOrder(CCTableViewVerticalFillOrder fillOrder)
 {
     if (m_eVordering != fillOrder) {
         m_eVordering = fillOrder;
-        if (m_pCellsUsed->count() > 0) {
+        if (m_pCellsUsed && m_pCellsUsed->count() > 0) {
             this->reloadData();
         }
     }
@@ -274,7 +277,6 @@ void CCTableView::_updateContentSize()
     if (cellsCount > 0)
     {
         float maxPosition = m_vCellsPositions[cellsCount];
-
         switch (this->getDirection())
         {
             case kCCScrollViewDirectionHorizontal:
@@ -301,6 +303,17 @@ void CCTableView::_updateContentSize()
 		m_eOldDirection = m_eDirection;
 	}
 
+	float viewLength;
+	switch(getDirection()){ 
+	case kCCScrollViewDirectionHorizontal:
+		viewLength = getViewSize().width;
+		m_iPageMax = -(minContainerOffset().x)/viewLength;
+		break;
+	default://竖直方向上的page计算有错，待修正。不过这个需求一般不出现在竖直方向上，所以留待以后处理。
+		viewLength = getViewSize().height;
+		m_iPageMax = -(minContainerOffset().y)/viewLength + 1;
+		break;
+	}
 }
 
 CCPoint CCTableView::_offsetFromIndex(unsigned int index)
@@ -557,6 +570,9 @@ void CCTableView::scrollViewDidScroll(CCScrollView* view)
             continue;
         }
         this->updateCellAtIndex(i);
+		//这里是因为 cocos 创建跟更新写到一起了。    在拖动的时候。 新发现了一个item时候 只会创建不会更新。 导致显示不对。
+		//还有一种改法是多创建一个（不过更新的时候还是会出问题。需要尝试 ）。  目前多更新一次（防止出现创建未更新的情况）。 理论上有一点消耗。 
+		this->updateCellAtIndex(i);
     }
 }
 
@@ -578,7 +594,56 @@ void CCTableView::ccTouchEnded(CCTouch *pTouch, CCEvent *pEvent)
 
         m_pTouchedCell = NULL;
     }
+	
+	
+	//小于某个值的时候，touchmove实际上没有做任何事情
+	if (m_bAutoScrollSize>0){
+		float touchDistance = 0.0f;
+		int pageTemp;
+		float viewLength;
+		switch(getDirection()){ 
+		case kCCScrollViewDirectionHorizontal:
+			viewLength = getViewSize().width;
+			pageTemp = -(getContentOffset().x)/viewLength;
+			m_iPageMax = -(minContainerOffset().x)/viewLength;
+			//touchDistance = pTouch->getLocationInView().x - pTouch->getStartLocationInView().x;
+			touchDistance = getContentOffset().x - m_touchStartContentPos.x;
+			break;
+		default://竖直方向上的page计算有错，待修正。不过这个需求一般不出现在竖直方向上，所以留待以后处理。
+			viewLength = getViewSize().height;
+			pageTemp = -getContentOffset().y/viewLength;
+			//touchDistance = pTouch->getLocationInView().y - pTouch->getStartLocationInView().y;
+			touchDistance = getContentOffset().y - m_touchStartContentPos.y;
+			break;
+		}
 
+		if(touchDistance != 0){
+
+
+			bool changePage = m_bAutoScrollSize < fabs(touchDistance);
+			bool toNext = touchDistance < 0;
+
+			if( (changePage && toNext)||(!changePage && !toNext) ){
+				m_iPageTarget = pageTemp+1;
+			}else if((!changePage && toNext)){
+				m_iPageTarget = pageTemp;
+			}else{
+				m_iPageTarget = pageTemp;
+			}
+			_alignToPage(m_iPageTarget);
+		}else{
+			m_iPageTarget = pageTemp;
+		}
+		m_bTouchMoved = false;
+	}else{
+		m_iPageTarget = getPageIdx();
+	}
+
+
+
+
+	
+	
     CCScrollView::ccTouchEnded(pTouch, pEvent);
 }
 
@@ -590,6 +655,7 @@ bool CCTableView::ccTouchBegan(CCTouch *pTouch, CCEvent *pEvent)
 
     bool touchResult = CCScrollView::ccTouchBegan(pTouch, pEvent);
 
+	m_touchStartContentPos = getContentOffset();
     if(m_pTouches->count() == 1) {
         unsigned int        index;
         CCPoint           point;
@@ -646,5 +712,84 @@ void CCTableView::ccTouchCancelled(CCTouch *pTouch, CCEvent *pEvent)
         m_pTouchedCell = NULL;
     }
 }
+
+int CCTableView::getPageIdx()
+{
+	float viewLength;
+	float currentPage;
+	switch(getDirection()){ 
+	case kCCScrollViewDirectionHorizontal:
+		viewLength = getViewSize().width;
+		currentPage = -(getContentOffset().x)/viewLength;
+		break;
+	default://竖直方向上的page计算有错，待修正。不过这个需求一般不出现在竖直方向上，所以留待以后处理。
+		viewLength = getViewSize().height;
+		currentPage = -getContentOffset().y/viewLength;
+		break;
+	}
+	return currentPage;
+}
+
+void CCTableView::_alignToPage(int iPage)
+{
+	if(m_bInAnimation){
+		return;
+	}
+	m_bInAnimation = true;
+	if(iPage>m_iPageMax){
+		iPage = m_iPageMax;
+	}
+	if(iPage<0){
+		iPage = 0;
+	}
+	m_iPageTarget = iPage;
+	float viewLength = 0;
+	float moveDistance = 0;
+	switch(getDirection()){ 
+	case kCCScrollViewDirectionHorizontal:
+		viewLength = getViewSize().width;
+		moveDistance = fabs(getContentOffset().x + iPage * viewLength);
+		break;
+	default://竖直方向上的page计算有错，待修正。不过这个需求一般不出现在竖直方向上，所以留待以后处理。
+		viewLength = getViewSize().height;
+		moveDistance = fabs(getContentOffset().y + iPage * viewLength);
+		break;
+	}
+
+	float fDuration = 0.5f;
+	if(viewLength != 0){
+		fDuration = fDuration * (moveDistance / viewLength);
+	}
+	switch(getDirection()){ 
+	case kCCScrollViewDirectionHorizontal:
+		setContentOffsetInDuration(ccp(-1 * iPage * viewLength,0),fDuration);
+		break;
+	default:
+		setContentOffsetInDuration(ccp(0,-1 * iPage * viewLength),fDuration);
+		break;
+	}
+	this->scheduleOnce(schedule_selector(CCTableView::_slideEnd), fDuration);
+}
+
+void CCTableView::_slideEnd(float dt)
+{
+	m_bInAnimation = false;
+	setTouchEnabled(true);
+}
+
+void CCTableView::pageNext()
+{
+	_alignToPage(getPageIdxTarget()+1);
+}
+
+void CCTableView::pagePrev()
+{
+	_alignToPage(getPageIdxTarget()-1);
+}
+
+
+
+
+
 
 NS_CC_EXT_END

@@ -315,9 +315,25 @@ typedef struct _ccBlendFunc
     GLenum src;
     //! destination blend function
     GLenum dst;
+
+	bool operator==(const _ccBlendFunc &a) const
+	{
+		return src == a.src && dst == a.dst;
+	}
+
+	bool operator<(const _ccBlendFunc &a) const
+	{
+		return src < a.src || (src < a.src && dst < a.dst);
+	}
+
 } ccBlendFunc;
 
 static const ccBlendFunc kCCBlendFuncDisable = {GL_ONE, GL_ZERO};
+
+static const ccBlendFunc kCCBlendFuncDISABLE = {GL_ONE, GL_ZERO};
+static const ccBlendFunc kCCBlendFuncALPHA_PREMULTIPLIED = {GL_ONE, GL_ONE_MINUS_SRC_ALPHA};
+static const ccBlendFunc kCCBlendFuncALPHA_NON_PREMULTIPLIED = {GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA};
+static const ccBlendFunc kCCBlendFuncADDITIVE = {GL_SRC_ALPHA, GL_ONE};
 
 // XXX: If any of these enums are edited and/or reordered, update CCTexture2D.m
 //! Vertical text alignment type

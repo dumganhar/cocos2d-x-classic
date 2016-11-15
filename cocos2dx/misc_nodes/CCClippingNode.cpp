@@ -31,6 +31,7 @@
 #include "shaders/CCShaderCache.h"
 #include "CCDirector.h"
 #include "support/CCPointExtension.h"
+#include "support/CCProfiling.h"
 #include "draw_nodes/CCDrawingPrimitives.h"
 
 NS_CC_BEGIN
@@ -144,6 +145,8 @@ void CCClippingNode::onExit()
 
 void CCClippingNode::visit()
 {
+	CC_PROFILER_HELPER;
+	CCDirector::sharedDirector()->flushDraw();
     // if stencil buffer disabled
     if (g_sStencilBits < 1)
     {
@@ -228,6 +231,7 @@ void CCClippingNode::visit()
     // this means that operation like glClear or glStencilOp will be masked with this value
     glStencilMask(mask_layer);
     
+	glClear(GL_STENCIL_BUFFER_BIT);
     // manually save the depth test state
     //GLboolean currentDepthTestEnabled = GL_TRUE;
     GLboolean currentDepthWriteMask = GL_TRUE;
@@ -308,6 +312,7 @@ void CCClippingNode::visit()
     transform();
     m_pStencil->visit();
     kmGLPopMatrix();
+	CCDirector::sharedDirector()->flushDraw();
     
     // restore alpha test state
     if (m_fAlphaThreshold < 1)
@@ -344,6 +349,7 @@ void CCClippingNode::visit()
     
     // draw (according to the stencil test func) this node and its childs
     CCNode::visit();
+	CCDirector::sharedDirector()->flushDraw();
     
     ///////////////////////////////////
     // CLEANUP

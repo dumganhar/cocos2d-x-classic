@@ -40,6 +40,7 @@ THE SOFTWARE.
 
 // extern
 #include "kazmath/GL/matrix.h"
+#include "support/CCProfiling.h"
 
 NS_CC_BEGIN
 
@@ -256,8 +257,8 @@ void CCParticleSystemQuad::updateQuadWithParticle(tCCParticle* particle, const C
         quad = &(m_pQuads[m_uParticleIdx]);
     }
     ccColor4B color = (m_bOpacityModifyRGB)
-        ? ccc4( particle->color.r*particle->color.a*255, particle->color.g*particle->color.a*255, particle->color.b*particle->color.a*255, particle->color.a*255)
-        : ccc4( particle->color.r*255, particle->color.g*255, particle->color.b*255, particle->color.a*255);
+        ? ccc4( (GLubyte)(particle->color.r*particle->color.a*255), (GLubyte)(particle->color.g*particle->color.a*255), (GLubyte)(particle->color.b*particle->color.a*255), (GLubyte)(particle->color.a*255))
+        : ccc4( (GLubyte)(particle->color.r*255), (GLubyte)(particle->color.g*255), (GLubyte)(particle->color.b*255), (GLubyte)(particle->color.a*255));
 
     quad->bl.colors = color;
     quad->br.colors = color;
@@ -325,11 +326,16 @@ void CCParticleSystemQuad::updateQuadWithParticle(tCCParticle* particle, const C
 }
 void CCParticleSystemQuad::postStep()
 {
+	CC_PROFILER_HELPER;
+	if (!isVisible())
+	{
+		return;
+	}
     glBindBuffer(GL_ARRAY_BUFFER, m_pBuffersVBO[0]);
 	
 	// Option 1: Sub Data
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(m_pQuads[0])*m_uTotalParticles, m_pQuads);
-	
+	//  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(m_pQuads[0])*m_uTotalParticles, m_pQuads);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(m_pQuads[0])*m_uTotalParticles, m_pQuads, GL_DYNAMIC_DRAW);
 	// Option 2: Data
     //	glBufferData(GL_ARRAY_BUFFER, sizeof(quads_[0]) * particleCount, quads_, GL_DYNAMIC_DRAW);
 	
@@ -347,7 +353,19 @@ void CCParticleSystemQuad::postStep()
 // overriding draw method
 void CCParticleSystemQuad::draw()
 {    
+	CC_PROFILER_HELPER;
+	if(!isActive())
+		return;
+
     CCAssert(!m_pBatchNode,"draw should not be called when added to a particleBatchNode");
+
+	// 待渲染图元数目为0，无需渲染 [1/24/2014 gusterzhai]
+	if (m_uParticleIdx == 0)
+	{
+		return;
+	}
+	
+	CCDirector::sharedDirector()->flushDraw();
 
     CC_NODE_DRAW_SETUP();
 
@@ -399,6 +417,9 @@ void CCParticleSystemQuad::draw()
 #endif
 
     CC_INCREMENT_GL_DRAWN_BATCHES_AND_VERTICES(1, m_uParticleIdx*6);
+#if CC_TARGET_PLATFORM == CC_PLATFORM_WIN32
+	CCDirector::sharedDirector()->addDrawTextureIDToVec(m_pTexture->getName());
+#endif
     CHECK_GL_ERROR_DEBUG();
 }
 
@@ -473,8 +494,20 @@ void CCParticleSystemQuad::setTotalParticles(unsigned int tp)
 void CCParticleSystemQuad::setupVBOandVAO()
 {
     // clean VAO
-    glDeleteBuffers(2, &m_pBuffersVBO[0]);
-    glDeleteVertexArrays(1, &m_uVAOname);
+	if (m_pBuffersVBO[0] != 0)
+	{
+		glDeleteBuffers(1, &m_pBuffersVBO[0]);
+	}
+	if (m_pBuffersVBO[1] != 0)
+	{
+		glDeleteBuffers(1, &m_pBuffersVBO[1]);
+	}
+
+	//glDeleteBuffers(2, &m_pBuffersVBO[0]);
+	if (m_uVAOname != 0)
+	{
+		glDeleteVertexArrays(1, &m_uVAOname);
+	}    
     ccGLBindVAO(0);
 
     glGenVertexArrays(1, &m_uVAOname);
@@ -513,7 +546,16 @@ void CCParticleSystemQuad::setupVBOandVAO()
 
 void CCParticleSystemQuad::setupVBO()
 {
-    glDeleteBuffers(2, &m_pBuffersVBO[0]);
+	if (m_pBuffersVBO[0] != 0)
+	{
+		glDeleteBuffers(1, &m_pBuffersVBO[0]);
+	}
+	if (m_pBuffersVBO[1] != 0)
+	{
+		glDeleteBuffers(1, &m_pBuffersVBO[1]);
+	}
+
+	//glDeleteBuffers(2, &m_pBuffersVBO[0]);
     
     glGenBuffers(2, &m_pBuffersVBO[0]);
 
@@ -616,6 +658,17 @@ CCParticleSystemQuad * CCParticleSystemQuad::create() {
     }
     CC_SAFE_DELETE(pParticleSystemQuad);
     return NULL;
+}
+//设置延迟时间
+void CCParticleSystemQuad::setDelayTime(float fTime)
+{
+    this->stopSystem();
+    this->scheduleOnce(schedule_selector(CCParticleSystemQuad::delayTimeComplete), fTime);
+}
+//延迟结束事件
+void CCParticleSystemQuad::delayTimeComplete(float fTime)
+{
+	this->resetSystem();
 }
 
 NS_CC_END

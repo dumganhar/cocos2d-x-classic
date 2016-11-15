@@ -15,6 +15,7 @@
 #include "CCParticleSystemQuadLoader.h"
 #include "CCScrollViewLoader.h"
 
+#include "CCParticleSystemQuadExLoader.h"
 
 
 NS_CC_EXT_BEGIN
@@ -42,10 +43,14 @@ void CCNodeLoaderLibrary::registerDefaultCCNodeLoaders() {
     this->registerCCNodeLoader("CCMenuItemImage", CCMenuItemImageLoader::loader());
     this->registerCCNodeLoader("CCControlButton", CCControlButtonLoader::loader());
     this->registerCCNodeLoader("CCParticleSystemQuad", CCParticleSystemQuadLoader::loader());
+    
+    this->registerCCNodeLoader("CCParticleSystemQuadEx", CCParticleSystemQuadExLoader::loader());
 }
 
 void CCNodeLoaderLibrary::registerCCNodeLoader(const char * pClassName, CCNodeLoader * pCCNodeLoader) {
     pCCNodeLoader->retain();
+	// fix memory leak [12/10/2013 gusterzhai]
+	unregisterCCNodeLoader(pClassName);
     this->mCCNodeLoaders.insert(CCNodeLoaderMapEntry(pClassName, pCCNodeLoader));
 }
 
@@ -65,6 +70,10 @@ void CCNodeLoaderLibrary::unregisterCCNodeLoader(const char * pClassName) {
 CCNodeLoader * CCNodeLoaderLibrary::getCCNodeLoader(const char* pClassName) {
     CCNodeLoaderMap::iterator ccNodeLoadersIterator = this->mCCNodeLoaders.find(pClassName);
     assert(ccNodeLoadersIterator != this->mCCNodeLoaders.end());
+	if (ccNodeLoadersIterator == this->mCCNodeLoaders.end())
+	{
+		return NULL;
+	}
     return ccNodeLoadersIterator->second;
 }
 

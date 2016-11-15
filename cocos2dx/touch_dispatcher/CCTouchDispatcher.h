@@ -145,6 +145,8 @@ public:
     virtual void touchesEnded(CCSet* touches, CCEvent* pEvent);
     virtual void touchesCancelled(CCSet* touches, CCEvent* pEvent);
 
+	void setScrollLock(bool bScrollLock){m_bScrollLock = bScrollLock;}
+	bool isScrollLock(){return m_bScrollLock;}
 public:
     CCTouchHandler* findHandler(CCTouchDelegate *pDelegate);
 protected:
@@ -168,6 +170,9 @@ protected:
 
     // 4, 1 for each type of event
     struct ccTouchHandlerHelperData m_sHandlerHelperData[ccTouchMax];
+
+	// 优化按钮与滑动区域的响应 [4/3/2014 gusterzhai]
+	bool m_bScrollLock;
 };
 
 // end of input group

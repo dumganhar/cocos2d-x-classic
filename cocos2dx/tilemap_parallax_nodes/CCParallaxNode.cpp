@@ -26,6 +26,7 @@ THE SOFTWARE.
 #include "CCParallaxNode.h"
 #include "support/CCPointExtension.h"
 #include "support/data_support/ccCArray.h"
+#include "support/CCProfiling.h"
 
 NS_CC_BEGIN
 
@@ -131,6 +132,7 @@ The positions are updated at visit because:
 */
 void CCParallaxNode::visit()
 {
+	CC_PROFILER_HELPER;
     //    CCPoint pos = position_;
     //    CCPoint    pos = [self convertToWorldSpace:CCPointZero];
     CCPoint pos = this->absolutePosition();
@@ -146,6 +148,20 @@ void CCParallaxNode::visit()
         m_tLastPosition = pos;
     }
     CCNode::visit();
+}
+
+
+void CCParallaxNode::incrementOffset(CCPoint offset, CCNode* node)
+{
+	for( unsigned int i=0;i < m_pParallaxArray->num;i++)
+	{
+		CCPointObject *point = (CCPointObject*)m_pParallaxArray->arr[i];
+		if( point->getChild()->isEqual(node)) 
+		{
+			point->setOffset(ccpAdd(point->getOffset(), offset));
+			break;
+		}
+	}
 }
 
 NS_CC_END

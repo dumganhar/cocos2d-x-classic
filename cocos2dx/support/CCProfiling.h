@@ -39,12 +39,16 @@ NS_CC_BEGIN
  */
 
 class CCProfilingTimer;
+class CCCallTree;
+class CCProfilerLog;
 
 /** CCProfiler
  cocos2d builtin profiler.
 
  To use it, enable set the CC_ENABLE_PROFILERS=1 in the ccConfig.h file
  */
+
+typedef void (*profiler_save_callback)(bool); 
 
 class CC_DLL CCProfiler : public CCObject
 {
@@ -54,6 +58,29 @@ public:
     void displayTimers(void);
     bool init(void);
 
+	void setEnable(bool enable);
+	bool isEnable(){return m_enable;}
+
+	void enablePerFrameLog(bool enable);
+	bool isEnablePerFrameLog(){return m_enablePerFrameLog;}
+
+	void setPath(std::string path){m_path = path;}
+	std::string getPath(){return m_path;}
+
+	void setInfo(std::string& info){m_info = info;}
+	std::string getInfo(){return m_info;}
+
+	void setRootName(std::string& rootName){m_rootName = rootName;}
+	std::string getRootName(){return m_rootName;}
+
+	void setSaveLogCallback(profiler_save_callback callBack){m_logSaveCallBack = callBack;}
+	profiler_save_callback getSaveLogCallBack(){return m_logSaveCallBack;} 
+
+	void mergeCallTree();
+
+	void beginTimingBlock(const char *timerName);
+	void endTimingBlock(const char *timerName);
+	void resetTimingBlock(const char *timerName);
 public:
     static CCProfiler* sharedProfiler(void);
     /** Creates and adds a new timer */
@@ -64,6 +91,16 @@ public:
     void releaseAllTimers();
 
     CCDictionary* m_pActiveTimers;
+
+	bool m_enable;
+	bool m_enablePerFrameLog;
+
+	std::string m_path;
+	std::string m_info;
+	std::string m_rootName;
+	CCCallTree* m_pCallTree;
+	CCProfilerLog* m_pLog;
+	profiler_save_callback m_logSaveCallBack; 
 };
 
 class CCProfilingTimer : public CCObject
@@ -75,6 +112,7 @@ public:
     inline struct cc_timeval * getStartTime(void) { return &m_sStartTime; };
     inline void setAverageTime(double value) { m_dAverageTime = value; }
     inline double getAverageTime(void) { return m_dAverageTime; }
+	inline double getTotalTime(void) { return totalTime; }
     /** resets the timer properties */
     void reset();
 
@@ -86,6 +124,18 @@ public:
     double            totalTime;
     unsigned int    numberOfCalls;
 };
+
+class CCProfilerHelper
+{
+public:
+	CCProfilerHelper(const char* file, const char* func);
+	~CCProfilerHelper();
+private:
+	std::string info;
+};
+
+#define CC_PROFILER_HELPER \
+	CCProfilerHelper profilerHelper(__FILE__, __FUNCTION__);
 
 extern void CCProfilingBeginTimingBlock(const char *timerName);
 extern void CCProfilingEndTimingBlock(const char *timerName);

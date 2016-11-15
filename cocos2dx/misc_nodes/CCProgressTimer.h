@@ -82,8 +82,10 @@ public:
     virtual void draw(void);
     void setAnchorPoint(CCPoint anchorPoint);
 
+	virtual void setOpacity(GLubyte opacity);
     virtual void setOpacityModifyRGB(bool bValue);
     virtual bool isOpacityModifyRGB(void);
+	virtual void updateDisplayedOpacity(GLubyte parentOpacity);
     
     inline bool isReverseDirection() { return m_bReverseDirection; };
     inline void setReverseDirection(bool value) { m_bReverseDirection = value; };
@@ -128,6 +130,9 @@ protected:
     CC_SYNTHESIZE(CCPoint, m_tBarChangeRate, BarChangeRate);
 
     bool m_bReverseDirection;
+
+	// opacity and RGB protocol
+	bool m_bOpacityModifyRGB;
 };
 
 // end of misc_nodes group

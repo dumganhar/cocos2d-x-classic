@@ -54,6 +54,9 @@ NS_CC_BEGIN
 
 //CLASS IMPLEMENTATIONS:
 
+static std::set<std::string> g_higePixelFormatFiles;
+static std::set<std::string> g_lowPixelFormatFiles;
+
 // If the image has alpha, you can create RGBA8 (32-bit) or RGBA4 (16-bit) or RGB5A1 (16-bit)
 // Default is: RGBA8888 (32-bit textures)
 static CCTexture2DPixelFormat g_defaultAlphaPixelFormat = kCCTexture2DPixelFormat_Default;
@@ -78,6 +81,10 @@ CCTexture2D::~CCTexture2D()
 {
 #if CC_ENABLE_CACHE_TEXTURE_DATA
     VolatileTexture::removeTexture(this);
+#endif
+
+#if CC_TARGET_PLATFORM == CC_PLATFORM_WIN32
+	CCDirector::sharedDirector()->removeTextureIDFromMap(m_uName);
 #endif
 
     CCLOGINFO("cocos2d: deallocing CCTexture2D %u.", m_uName);
@@ -173,78 +180,167 @@ bool CCTexture2D::hasPremultipliedAlpha()
     return m_bHasPremultipliedAlpha;
 }
 
-bool CCTexture2D::initWithData(const void *data, CCTexture2DPixelFormat pixelFormat, unsigned int pixelsWide, unsigned int pixelsHigh, const CCSize& contentSize)
+bool CCTexture2D::initWithData(const void *data, unsigned int dataLen, CCTexture2DPixelFormat pixelFormat, unsigned int pixelsWide, unsigned int pixelsHigh, const CCSize& contentSize)
 {
-    unsigned int bitsPerPixel;
-    //Hack: bitsPerPixelForFormat returns wrong number for RGB_888 textures. See function.
-    if(pixelFormat == kCCTexture2DPixelFormat_RGB888)
-    {
-        bitsPerPixel = 24;
-    }
-    else
-    {
-        bitsPerPixel = bitsPerPixelForFormat(pixelFormat);
-    }
-
-    unsigned int bytesPerRow = pixelsWide * bitsPerPixel / 8;
-
-    if(bytesPerRow % 8 == 0)
-    {
-        glPixelStorei(GL_UNPACK_ALIGNMENT, 8);
-    }
-    else if(bytesPerRow % 4 == 0)
-    {
-        glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-    }
-    else if(bytesPerRow % 2 == 0)
-    {
-        glPixelStorei(GL_UNPACK_ALIGNMENT, 2);
-    }
-    else
-    {
-        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    }
-
-
-    glGenTextures(1, &m_uName);
-    ccGLBindTexture2D(m_uName);
-
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+    GLenum internalFormat;
+    GLenum pixelDataformat;
+    GLenum pixelDataType;
+    bool compressed;
 
     // Specify OpenGL texture image
 
     switch(pixelFormat)
     {
     case kCCTexture2DPixelFormat_RGBA8888:
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)pixelsWide, (GLsizei)pixelsHigh, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+        internalFormat = GL_RGBA;
+        pixelDataformat = GL_RGBA;
+        pixelDataType = GL_UNSIGNED_BYTE;
+        compressed = false;
         break;
     case kCCTexture2DPixelFormat_RGB888:
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (GLsizei)pixelsWide, (GLsizei)pixelsHigh, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        internalFormat = GL_RGB;
+        pixelDataformat = GL_RGB;
+        pixelDataType = GL_UNSIGNED_BYTE;
+        compressed = false;
         break;
     case kCCTexture2DPixelFormat_RGBA4444:
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)pixelsWide, (GLsizei)pixelsHigh, 0, GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4, data);
+        internalFormat = GL_RGBA;
+        pixelDataformat = GL_RGBA;
+        pixelDataType = GL_UNSIGNED_SHORT_4_4_4_4;
+        compressed = false;
         break;
     case kCCTexture2DPixelFormat_RGB5A1:
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)pixelsWide, (GLsizei)pixelsHigh, 0, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, data);
+        internalFormat = GL_RGBA;
+        pixelDataformat = GL_RGBA;
+        pixelDataType = GL_UNSIGNED_SHORT_5_5_5_1;
+        compressed = false;
         break;
     case kCCTexture2DPixelFormat_RGB565:
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (GLsizei)pixelsWide, (GLsizei)pixelsHigh, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, data);
+        internalFormat = GL_RGB;
+        pixelDataformat = GL_RGB;
+        pixelDataType = GL_UNSIGNED_SHORT_5_6_5;
+        compressed = false;
         break;
     case kCCTexture2DPixelFormat_AI88:
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, (GLsizei)pixelsWide, (GLsizei)pixelsHigh, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, data);
+        internalFormat = GL_LUMINANCE_ALPHA;
+        pixelDataformat = GL_LUMINANCE_ALPHA;
+        pixelDataType = GL_UNSIGNED_BYTE;
+        compressed = false;
         break;
     case kCCTexture2DPixelFormat_A8:
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, (GLsizei)pixelsWide, (GLsizei)pixelsHigh, 0, GL_ALPHA, GL_UNSIGNED_BYTE, data);
+        internalFormat = GL_ALPHA;
+        pixelDataformat = GL_ALPHA;
+        pixelDataType = GL_UNSIGNED_BYTE;
+        compressed = false;
         break;
     case kCCTexture2DPixelFormat_I8:
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, (GLsizei)pixelsWide, (GLsizei)pixelsHigh, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
+        internalFormat = GL_LUMINANCE;
+        pixelDataformat = GL_LUMINANCE;
+        pixelDataType = GL_UNSIGNED_BYTE;
+        compressed = false;
         break;
     default:
         CCAssert(0, "NSInternalInconsistencyException");
+    }
 
+    CCPVRMipmap midmaps = { (unsigned char *)data, dataLen };
+
+    return initWithMipmaps(&midmaps, 1, pixelFormat, internalFormat, pixelDataformat, pixelDataType, compressed, pixelsWide, pixelsHigh, contentSize);
+}
+
+bool CCTexture2D::initWithMipmaps(CCPVRMipmap* midmaps, int mipmapsNum, CCTexture2DPixelFormat pixelFormat, GLenum internalFormat, GLenum pixelDataformat, GLenum pixelDataType, bool compressed, unsigned int pixelsWide, unsigned int pixelsHigh, const CCSize& contentSize)
+{
+    if (mipmapsNum == 1 && !compressed)
+    {
+        unsigned int bytesPerRow = pixelsWide * bitsPerPixelInDataForFormat(pixelFormat) / 8;
+
+        if(bytesPerRow % 8 == 0)
+        {
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 8);
+        }
+        else if(bytesPerRow % 4 == 0)
+        {
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+        }
+        else if(bytesPerRow % 2 == 0)
+        {
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 2);
+        }
+        else
+        {
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+        }
+    }
+    else
+    {
+        // From PVR sources: "PVR files are never row aligned."
+        glPixelStorei(GL_UNPACK_ALIGNMENT,1);
+    }
+
+    if (m_uName != 0)
+    {
+        ccGLDeleteTexture(m_uName);
+    }
+
+    glGenTextures(1, &m_uName);
+    ccGLBindTexture2D(m_uName);
+
+#if CC_TARGET_PLATFORM == CC_PLATFORM_WIN32
+	CCDirector::sharedDirector()->putTextureIDFileMap(m_sFileName, m_uName);
+#endif
+    // Default: Anti alias.
+    if (mipmapsNum == 1)
+    {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    }
+    else
+    {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+    }
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    CHECK_GL_ERROR_DEBUG(); // clean possible GL error
+
+    unsigned int width = pixelsWide;
+    unsigned int height = pixelsHigh;
+
+    // Generate textures with mipmaps
+    for (int i = 0; i < mipmapsNum; ++i)
+    {
+        if (compressed && ! CCConfiguration::sharedConfiguration()->supportsPVRTC()) 
+        {
+            CCLOG("cocos2d: WARNING: PVRTC images are not supported");
+            return false;
+        }
+
+        unsigned char *data = midmaps[i].address;
+        GLsizei datalen = midmaps[i].len;
+
+        if (compressed)
+        {
+            glCompressedTexImage2D(GL_TEXTURE_2D, i, internalFormat, (GLsizei)width, (GLsizei)height, 0, datalen, data);
+        }
+        else
+        {
+            glTexImage2D(GL_TEXTURE_2D, i, internalFormat, (GLsizei)width, (GLsizei)height, 0, pixelDataformat, pixelDataType, data);
+        }
+
+        if (i > 0 && (width != height || ccNextPOT(width) != width ))
+        {
+            CCLOG("cocos2d: CCTexture2D. WARNING. Mipmap level %u is not squared. Texture won't render correctly. width=%u != height=%u", i, width, height);
+        }
+
+        GLenum err = glGetError();
+        if (err != GL_NO_ERROR)
+        {
+            CCLOG("cocos2d: CCTexture2D: Error uploading compressed texture level: %u . glError: 0x%04X", i, err);
+            return false;
+        }
+
+        width = MAX(width >> 1, 1);
+        height = MAX(height >> 1, 1);
     }
 
     m_tContentSize = contentSize;
@@ -254,14 +350,21 @@ bool CCTexture2D::initWithData(const void *data, CCTexture2DPixelFormat pixelFor
     m_fMaxS = contentSize.width / (float)(pixelsWide);
     m_fMaxT = contentSize.height / (float)(pixelsHigh);
 
-    m_bHasPremultipliedAlpha = false;
-    m_bHasMipmaps = false;
+    if (pixelFormat == kCCTexture2DPixelFormat_PVRTC4 || pixelFormat == kCCTexture2DPixelFormat_PVRTC2)
+    {
+        m_bHasPremultipliedAlpha = PVRHaveAlphaPremultiplied_;
+    }
+    else
+    {
+        m_bHasPremultipliedAlpha = false;
+    }
+
+    m_bHasMipmaps = mipmapsNum > 1;
 
     setShaderProgram(CCShaderCache::sharedShaderCache()->programForKey(kCCShader_PositionTexture));
 
     return true;
 }
-
 
 const char* CCTexture2D::description(void)
 {
@@ -278,6 +381,9 @@ bool CCTexture2D::initWithImage(CCImage *uiImage)
         return false;
     }
     
+#if CC_TARGET_PLATFORM == CC_PLATFORM_WIN32
+	m_sFileName = uiImage->getFileName();
+#endif
     unsigned int imageWidth = uiImage->getWidth();
     unsigned int imageHeight = uiImage->getHeight();
     
@@ -289,9 +395,17 @@ bool CCTexture2D::initWithImage(CCImage *uiImage)
         CCLOG("cocos2d: WARNING: Image (%u x %u) is bigger than the supported %u x %u", imageWidth, imageHeight, maxTextureSize, maxTextureSize);
         return false;
     }
-    
-    // always load premultiplied images
-    return initPremultipliedATextureWithImage(uiImage, imageWidth, imageHeight);
+
+    if (uiImage->isCompressed() && uiImage->getNumberOfMipmaps() > 0)
+    {
+        CCSize contentSize = CCSizeMake((float)imageWidth, (float)imageHeight);
+        return initWithMipmaps(uiImage->getMipmaps(), uiImage->getNumberOfMipmaps(), uiImage->getFormat(), uiImage->getInternalFormat(), uiImage->getPixelDataFormat(), uiImage->getPixelDataType(), uiImage->isCompressed(), imageWidth, imageHeight, contentSize);
+    }
+    else
+    {
+        // always load premultiplied images
+        return initPremultipliedATextureWithImage(uiImage, imageWidth, imageHeight);
+    }
 }
 
 bool CCTexture2D::initPremultipliedATextureWithImage(CCImage *image, unsigned int width, unsigned int height)
@@ -304,11 +418,53 @@ bool CCTexture2D::initPremultipliedATextureWithImage(CCImage *image, unsigned in
     CCSize                    imageSize = CCSizeMake((float)(image->getWidth()), (float)(image->getHeight()));
     CCTexture2DPixelFormat    pixelFormat;
     size_t                    bpp = image->getBitsPerComponent();
-
+#if CC_TARGET_PLATFORM == CC_PLATFORM_WIN32
+	m_sFileName = image->getFileName();
+#endif
     // compute pixel format
     if (hasAlpha)
     {
-    	pixelFormat = g_defaultAlphaPixelFormat;
+        pixelFormat = g_defaultAlphaPixelFormat;
+
+        // 有些图片不能使用低精度，效果会比较差
+        if (pixelFormat != kCCTexture2DPixelFormat_Default)
+        {
+            std::string name = image->getFileName();
+            if (std::string::npos != name.find(".jpg"))
+            {
+                //cocos2dx 默认把jpg转换成了bitmap， 所以需要排除
+                pixelFormat = kCCTexture2DPixelFormat_Default;
+            }
+            else
+            {
+                size_t pos = name.find_last_of("/");
+                if (pos != std::string::npos)
+                {
+                    name = name.substr(pos + 1);
+                }
+                else
+                {
+                    pos = name.find_last_of("\\");
+                    if (pos != std::string::npos)
+                    {
+                        name = name.substr(pos + 1);
+                    }
+                }
+
+                if (g_higePixelFormatFiles.find(name) != g_higePixelFormatFiles.end())
+                {
+                    pixelFormat = kCCTexture2DPixelFormat_Default;
+                }
+                else if (g_lowPixelFormatFiles.find(name) != g_lowPixelFormatFiles.end())
+                {
+                    pixelFormat = g_defaultAlphaPixelFormat;
+                }
+//                 else if (name.find("wsparticle_") != std::string::npos)
+//                 {
+//                     pixelFormat = kCCTexture2DPixelFormat_Default;
+//                 }
+            }
+        }
     }
     else
     {
@@ -320,19 +476,19 @@ bool CCTexture2D::initPremultipliedATextureWithImage(CCImage *image, unsigned in
         {
             pixelFormat = kCCTexture2DPixelFormat_RGB565;
         }
-        
     }
-    
+
     // Repack the pixel data into the right format
     unsigned int length = width * height;
+    unsigned int tempDataLen = length * bitsPerPixelInDataForFormat(pixelFormat) / 8;
 
     if (pixelFormat == kCCTexture2DPixelFormat_RGB565)
     {
         if (hasAlpha)
         {
             // Convert "RRRRRRRRRGGGGGGGGBBBBBBBBAAAAAAAA" to "RRRRRGGGGGGBBBBB"
-            
-            tempData = new unsigned char[width * height * 2];
+
+            tempData = new unsigned char[tempDataLen];
             outPixel16 = (unsigned short*)tempData;
             inPixel32 = (unsigned int*)image->getData();
             
@@ -347,8 +503,8 @@ bool CCTexture2D::initPremultipliedATextureWithImage(CCImage *image, unsigned in
         else 
         {
             // Convert "RRRRRRRRRGGGGGGGGBBBBBBBB" to "RRRRRGGGGGGBBBBB"
-            
-            tempData = new unsigned char[width * height * 2];
+
+            tempData = new unsigned char[tempDataLen];
             outPixel16 = (unsigned short*)tempData;
             inPixel8 = (unsigned char*)image->getData();
             
@@ -365,8 +521,8 @@ bool CCTexture2D::initPremultipliedATextureWithImage(CCImage *image, unsigned in
     {
         // Convert "RRRRRRRRRGGGGGGGGBBBBBBBBAAAAAAAA" to "RRRRGGGGBBBBAAAA"
         
-        inPixel32 = (unsigned int*)image->getData();  
-        tempData = new unsigned char[width * height * 2];
+        inPixel32 = (unsigned int*)image->getData();
+        tempData = new unsigned char[tempDataLen];
         outPixel16 = (unsigned short*)tempData;
         
         for(unsigned int i = 0; i < length; ++i, ++inPixel32)
@@ -381,8 +537,8 @@ bool CCTexture2D::initPremultipliedATextureWithImage(CCImage *image, unsigned in
     else if (pixelFormat == kCCTexture2DPixelFormat_RGB5A1)
     {
         // Convert "RRRRRRRRRGGGGGGGGBBBBBBBBAAAAAAAA" to "RRRRRGGGGGBBBBBA"
-        inPixel32 = (unsigned int*)image->getData();   
-        tempData = new unsigned char[width * height * 2];
+        inPixel32 = (unsigned int*)image->getData();
+        tempData = new unsigned char[tempDataLen];
         outPixel16 = (unsigned short*)tempData;
         
         for(unsigned int i = 0; i < length; ++i, ++inPixel32)
@@ -398,7 +554,7 @@ bool CCTexture2D::initPremultipliedATextureWithImage(CCImage *image, unsigned in
     {
         // Convert "RRRRRRRRRGGGGGGGGBBBBBBBBAAAAAAAA" to "AAAAAAAA"
         inPixel32 = (unsigned int*)image->getData();
-        tempData = new unsigned char[width * height];
+        tempData = new unsigned char[tempDataLen];
         unsigned char *outPixel8 = tempData;
         
         for(unsigned int i = 0; i < length; ++i, ++inPixel32)
@@ -411,9 +567,9 @@ bool CCTexture2D::initPremultipliedATextureWithImage(CCImage *image, unsigned in
     {
         // Convert "RRRRRRRRRGGGGGGGGBBBBBBBBAAAAAAAA" to "RRRRRRRRGGGGGGGGBBBBBBBB"
         inPixel32 = (unsigned int*)image->getData();
-        tempData = new unsigned char[width * height * 3];
+        tempData = new unsigned char[tempDataLen];
         unsigned char *outPixel8 = tempData;
-        
+
         for(unsigned int i = 0; i < length; ++i, ++inPixel32)
         {
             *outPixel8++ = (*inPixel32 >> 0) & 0xFF; // R
@@ -422,7 +578,7 @@ bool CCTexture2D::initPremultipliedATextureWithImage(CCImage *image, unsigned in
         }
     }
     
-    initWithData(tempData, pixelFormat, width, height, imageSize);
+    initWithData(tempData, tempDataLen, pixelFormat, width, height, imageSize);
     
     if (tempData != image->getData())
     {
@@ -612,7 +768,7 @@ bool CCTexture2D::initWithString(const char *text, ccFontDefinition *textDefinit
     
     #else
     
-        CCAssert(false, "Currently only supported on iOS and Android!");
+        //CCAssert(false, "Currently only supported on iOS and Android!");
         return false;
     
     #endif
@@ -698,21 +854,13 @@ bool CCTexture2D::initWithPVRFile(const char* file)
     
     CCTexturePVR *pvr = new CCTexturePVR;
     bRet = pvr->initWithContentsOfFile(file);
-        
+#if CC_TARGET_PLATFORM == CC_PLATFORM_WIN32
+	m_sFileName = file;
+#endif
     if (bRet)
     {
-        pvr->setRetainName(true); // don't dealloc texture on release
-        
-        m_uName = pvr->getName();
-        m_fMaxS = 1.0f;
-        m_fMaxT = 1.0f;
-        m_uPixelsWide = pvr->getWidth();
-        m_uPixelsHigh = pvr->getHeight();
-        m_tContentSize = CCSizeMake((float)m_uPixelsWide, (float)m_uPixelsHigh);
-        m_bHasPremultipliedAlpha = PVRHaveAlphaPremultiplied_;
-        m_ePixelFormat = pvr->getFormat();
-        m_bHasMipmaps = pvr->getNumberOfMipmaps() > 1;       
-
+        CCSize contentSize = CCSizeMake((float)pvr->getWidth(), (float)pvr->getHeight());
+        bRet = initWithMipmaps(pvr->getMipmaps(), pvr->getNumberOfMipmaps(), pvr->getFormat(), pvr->getInternalFormat(), pvr->getPixelDataFormat(), pvr->getPixelDataType(), pvr->isCompressed(), pvr->getWidth(), pvr->getHeight(), contentSize);
         pvr->release();
     }
     else
@@ -792,6 +940,20 @@ void CCTexture2D::setTexParameters(ccTexParams *texParams)
 #endif
 }
 
+void CCTexture2D::setTexWrapRepeat()
+{
+    ccGLBindTexture2D( m_uName );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
+}
+
+void CCTexture2D::setTexWrapEdge()
+{
+    ccGLBindTexture2D( m_uName );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+}
+
 void CCTexture2D::setAliasTexParameters()
 {
     ccGLBindTexture2D( m_uName );
@@ -834,45 +996,45 @@ void CCTexture2D::setAntiAliasTexParameters()
 
 const char* CCTexture2D::stringForFormat()
 {
-	switch (m_ePixelFormat) 
-	{
-		case kCCTexture2DPixelFormat_RGBA8888:
-			return  "RGBA8888";
+    switch (m_ePixelFormat) 
+    {
+        case kCCTexture2DPixelFormat_RGBA8888:
+            return  "RGBA8888";
 
-		case kCCTexture2DPixelFormat_RGB888:
-			return  "RGB888";
+        case kCCTexture2DPixelFormat_RGB888:
+            return  "RGB888";
 
-		case kCCTexture2DPixelFormat_RGB565:
-			return  "RGB565";
+        case kCCTexture2DPixelFormat_RGB565:
+            return  "RGB565";
 
-		case kCCTexture2DPixelFormat_RGBA4444:
-			return  "RGBA4444";
+        case kCCTexture2DPixelFormat_RGBA4444:
+            return  "RGBA4444";
 
-		case kCCTexture2DPixelFormat_RGB5A1:
-			return  "RGB5A1";
+        case kCCTexture2DPixelFormat_RGB5A1:
+            return  "RGB5A1";
 
-		case kCCTexture2DPixelFormat_AI88:
-			return  "AI88";
+        case kCCTexture2DPixelFormat_AI88:
+            return  "AI88";
 
-		case kCCTexture2DPixelFormat_A8:
-			return  "A8";
+        case kCCTexture2DPixelFormat_A8:
+            return  "A8";
 
-		case kCCTexture2DPixelFormat_I8:
-			return  "I8";
+        case kCCTexture2DPixelFormat_I8:
+            return  "I8";
 
-		case kCCTexture2DPixelFormat_PVRTC4:
-			return  "PVRTC4";
+        case kCCTexture2DPixelFormat_PVRTC4:
+            return  "PVRTC4";
 
-		case kCCTexture2DPixelFormat_PVRTC2:
-			return  "PVRTC2";
+        case kCCTexture2DPixelFormat_PVRTC2:
+            return  "PVRTC2";
 
-		default:
-			CCAssert(false , "unrecognized pixel format");
-			CCLOG("stringForFormat: %ld, cannot give useful result", (long)m_ePixelFormat);
-			break;
-	}
+        default:
+            CCAssert(false , "unrecognized pixel format");
+            CCLOG("stringForFormat: %ld, cannot give useful result", (long)m_ePixelFormat);
+            break;
+    }
 
-	return  NULL;
+    return  NULL;
 }
 
 //
@@ -890,54 +1052,77 @@ CCTexture2DPixelFormat CCTexture2D::defaultAlphaPixelFormat()
     return g_defaultAlphaPixelFormat;
 }
 
+void CCTexture2D::setHigePixelFormatFiles(std::set<std::string>& files)
+{
+    g_higePixelFormatFiles = files;
+}
+
+void CCTexture2D::setLowPixelFormatFiles(std::set<std::string>& files)
+{
+    g_lowPixelFormatFiles = files;
+}
+
 unsigned int CCTexture2D::bitsPerPixelForFormat(CCTexture2DPixelFormat format)
 {
-	unsigned int ret=0;
+    unsigned int ret=0;
 
-	switch (format) {
-		case kCCTexture2DPixelFormat_RGBA8888:
-			ret = 32;
-			break;
-		case kCCTexture2DPixelFormat_RGB888:
-			// It is 32 and not 24, since its internal representation uses 32 bits.
-			ret = 32;
-			break;
-		case kCCTexture2DPixelFormat_RGB565:
-			ret = 16;
-			break;
-		case kCCTexture2DPixelFormat_RGBA4444:
-			ret = 16;
-			break;
-		case kCCTexture2DPixelFormat_RGB5A1:
-			ret = 16;
-			break;
-		case kCCTexture2DPixelFormat_AI88:
-			ret = 16;
-			break;
-		case kCCTexture2DPixelFormat_A8:
-			ret = 8;
-			break;
-		case kCCTexture2DPixelFormat_I8:
-			ret = 8;
-			break;
-		case kCCTexture2DPixelFormat_PVRTC4:
-			ret = 4;
-			break;
-		case kCCTexture2DPixelFormat_PVRTC2:
-			ret = 2;
-			break;
-		default:
-			ret = -1;
-			CCAssert(false , "unrecognized pixel format");
-			CCLOG("bitsPerPixelForFormat: %ld, cannot give useful result", (long)format);
-			break;
-	}
-	return ret;
+    switch (format) {
+        case kCCTexture2DPixelFormat_RGBA8888:
+            ret = 32;
+            break;
+        case kCCTexture2DPixelFormat_RGB888:
+            // It is 32 and not 24, since its internal representation uses 32 bits.
+            ret = 32;
+            break;
+        case kCCTexture2DPixelFormat_RGB565:
+            ret = 16;
+            break;
+        case kCCTexture2DPixelFormat_RGBA4444:
+            ret = 16;
+            break;
+        case kCCTexture2DPixelFormat_RGB5A1:
+            ret = 16;
+            break;
+        case kCCTexture2DPixelFormat_AI88:
+            ret = 16;
+            break;
+        case kCCTexture2DPixelFormat_A8:
+            ret = 8;
+            break;
+        case kCCTexture2DPixelFormat_I8:
+            ret = 8;
+            break;
+        case kCCTexture2DPixelFormat_PVRTC4:
+            ret = 4;
+            break;
+        case kCCTexture2DPixelFormat_PVRTC2:
+            ret = 2;
+            break;
+        default:
+            ret = -1;
+            CCAssert(false , "unrecognized pixel format");
+            CCLOG("bitsPerPixelForFormat: %ld, cannot give useful result", (long)format);
+            break;
+    }
+    return ret;
 }
 
 unsigned int CCTexture2D::bitsPerPixelForFormat()
 {
-	return this->bitsPerPixelForFormat(m_ePixelFormat);
+    return this->bitsPerPixelForFormat(m_ePixelFormat);
+}
+
+unsigned int CCTexture2D::bitsPerPixelInDataForFormat(CCTexture2DPixelFormat format)
+{
+    //Hack: bitsPerPixelForFormat returns wrong number for RGB_888 textures. See function.
+    if(format == kCCTexture2DPixelFormat_RGB888)
+    {
+        return 24;
+    }
+    else
+    {
+        return bitsPerPixelForFormat(format);
+    }
 }
 
 

@@ -80,6 +80,8 @@ bool CCTouchDispatcher::init(void)
     m_bToQuit = false;
     m_bLocked = false;
 
+	m_bScrollLock = false;
+
     m_sHandlerHelperData[CCTOUCHBEGAN].m_type = CCTOUCHBEGAN;
     m_sHandlerHelperData[CCTOUCHMOVED].m_type = CCTOUCHMOVED;
     m_sHandlerHelperData[CCTOUCHENDED].m_type = CCTOUCHENDED;
@@ -396,6 +398,21 @@ void CCTouchDispatcher::touches(CCSet *pTouches, CCEvent *pEvent, unsigned int u
             }
         }
     }
+
+	// 优化按钮与滑动区域的响应 [4/3/2014 gusterzhai]
+	{
+		switch (sHelper.m_type)
+		{
+		case CCTOUCHMOVED:
+			break;
+		case CCTOUCHENDED:
+			m_bScrollLock = false;
+			break;
+		case CCTOUCHCANCELLED:			
+			m_bScrollLock = false;
+			break;
+		}
+	}
 
     //
     // process standard handlers 2nd

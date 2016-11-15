@@ -33,6 +33,7 @@ THE SOFTWARE.
 #include "CCSpriteFrame.h"
 #include "CCSprite.h"
 #include "support/TransformUtils.h"
+#include "support/CCProfiling.h"
 #include "platform/CCFileUtils.h"
 #include "cocoa/CCString.h"
 #include "cocoa/CCArray.h"
@@ -203,12 +204,17 @@ void CCSpriteFrameCache::addSpriteFramesWithDictionary(CCDictionary* dictionary,
 
 void CCSpriteFrameCache::addSpriteFramesWithFile(const char *pszPlist, CCTexture2D *pobTexture)
 {
+	
     std::string fullPath = CCFileUtils::sharedFileUtils()->fullPathForFilename(pszPlist);
-    CCDictionary *dict = CCDictionary::createWithContentsOfFileThreadSafe(fullPath.c_str());
+	fullPath = CCFileUtils::sharedFileUtils()->getStandardFullPath(fullPath);
 
+    //CCDictionary *dict = CCDictionary::createWithContentsOfFileThreadSafe(fullPath.c_str());
+	CCDictionary* dict = getPlistDictionary(fullPath);	
+
+	
     addSpriteFramesWithDictionary(dict, pobTexture);
 
-    dict->release();
+    //dict->release();
 }
 
 void CCSpriteFrameCache::addSpriteFramesWithFile(const char* plist, const char* textureFileName)
@@ -228,12 +234,21 @@ void CCSpriteFrameCache::addSpriteFramesWithFile(const char* plist, const char* 
 
 void CCSpriteFrameCache::addSpriteFramesWithFile(const char *pszPlist)
 {
+	CC_PROFILER_HELPER;
     CCAssert(pszPlist, "plist filename should not be NULL");
 
-    if (m_pLoadedFileNames->find(pszPlist) == m_pLoadedFileNames->end())
+	std::string fullPath = CCFileUtils::sharedFileUtils()->fullPathForFilename(pszPlist);
+	fullPath = CCFileUtils::sharedFileUtils()->getStandardFullPath(fullPath);
+
+    if (m_pLoadedFileNames->find(fullPath) == m_pLoadedFileNames->end())
     {
-        std::string fullPath = CCFileUtils::sharedFileUtils()->fullPathForFilename(pszPlist);
-        CCDictionary *dict = CCDictionary::createWithContentsOfFileThreadSafe(fullPath.c_str());
+        //CCDictionary *dict = CCDictionary::createWithContentsOfFileThreadSafe(fullPath.c_str());
+		CCDictionary* dict = getPlistDictionary(fullPath);
+        //CCAssert(dict, "[CCSpriteFrameCache::addSpriteFramesWithFile] dict is NULL");   // [nullpointer protect]
+        if (!dict)
+        {
+            return;
+        }
 
         string texturePath("");
 
@@ -269,14 +284,14 @@ void CCSpriteFrameCache::addSpriteFramesWithFile(const char *pszPlist)
         if (pTexture)
         {
             addSpriteFramesWithDictionary(dict, pTexture);
-            m_pLoadedFileNames->insert(pszPlist);
+            m_pLoadedFileNames->insert(fullPath);
         }
         else
         {
             CCLOG("cocos2d: CCSpriteFrameCache: Couldn't load texture");
         }
 
-        dict->release();
+        //dict->release();
     }
 
 }
@@ -284,6 +299,57 @@ void CCSpriteFrameCache::addSpriteFramesWithFile(const char *pszPlist)
 void CCSpriteFrameCache::addSpriteFrame(CCSpriteFrame *pobFrame, const char *pszFrameName)
 {
     m_pSpriteFrames->setObject(pobFrame, pszFrameName);
+}
+
+
+CCTexture2D* CCSpriteFrameCache::getTextureByPlist(const std::string& strPlist)
+{
+	std::string fullPath = CCFileUtils::sharedFileUtils()->fullPathForFilename(strPlist.c_str());
+	fullPath = CCFileUtils::sharedFileUtils()->getStandardFullPath(fullPath);
+
+	//CCDictionary *dict = CCDictionary::createWithContentsOfFileThreadSafe(fullPath.c_str());
+	CCDictionary* dict = getPlistDictionary(fullPath);
+	if(!dict)
+	{
+		CCLog("CCSpriteFrameCache::getTextureByPlist !dict   %s", strPlist.c_str());
+		return NULL;
+	}
+
+	std::string texturePath("");
+
+	CCDictionary* metadataDict = (CCDictionary*)dict->objectForKey("metadata");
+	if (metadataDict)
+	{
+		// try to read  texture file name from meta data
+		texturePath = metadataDict->valueForKey("textureFileName")->getCString();
+	}
+
+	if (! texturePath.empty())
+	{
+		// build texture path relative to plist file
+		texturePath = CCFileUtils::sharedFileUtils()->fullPathFromRelativeFile(texturePath.c_str(), strPlist.c_str());
+	}
+	else
+	{
+		// build texture path by replacing file extension
+		texturePath = strPlist;
+
+		// remove .xxx
+		size_t startPos = texturePath.find_last_of("."); 
+		texturePath = texturePath.erase(startPos);
+
+		// append .png
+		texturePath = texturePath.append(".png");
+
+		CCLOG("cocos2d: CCSpriteFrameCache: Trying to use file %s as texture", texturePath.c_str());
+	}
+
+	//CCTexture2D *pTexture = CCTextureCache::sharedTextureCache()->addImage(texturePath.c_str());
+	CCTexture2D *pTexture = CCTextureCache::sharedTextureCache()->textureForKey(texturePath.c_str());
+
+	//dict->release();
+
+	return pTexture;
 }
 
 void CCSpriteFrameCache::removeSpriteFrames(void)
@@ -341,25 +407,36 @@ void CCSpriteFrameCache::removeSpriteFrameByName(const char *pszName)
     m_pLoadedFileNames->clear();
 }
 
-void CCSpriteFrameCache::removeSpriteFramesFromFile(const char* plist)
+void CCSpriteFrameCache::removeSpriteFramesFromFile(const char* plist, bool bForce)
 {
+	CC_PROFILER_HELPER;
     std::string fullPath = CCFileUtils::sharedFileUtils()->fullPathForFilename(plist);
-    CCDictionary* dict = CCDictionary::createWithContentsOfFileThreadSafe(fullPath.c_str());
+	fullPath = CCFileUtils::sharedFileUtils()->getStandardFullPath(fullPath);
 
-    removeSpriteFramesFromDictionary((CCDictionary*)dict);
+    //CCDictionary* dict = CCDictionary::createWithContentsOfFileThreadSafe(fullPath.c_str());
+	CCDictionary* dict = getPlistDictionary(fullPath, bForce);
+	if (NULL != dict)
+	{
+		removeSpriteFramesFromDictionary((CCDictionary*)dict);
+	}   
 
     // remove it from the cache
-    set<string>::iterator ret = m_pLoadedFileNames->find(plist);
+    set<string>::iterator ret = m_pLoadedFileNames->find(fullPath);
     if (ret != m_pLoadedFileNames->end())
     {
         m_pLoadedFileNames->erase(ret);
     }
 
-    dict->release();
+    //dict->release();
 }
 
 void CCSpriteFrameCache::removeSpriteFramesFromDictionary(CCDictionary* dictionary)
 {
+	if (NULL == dictionary)
+	{
+		return;
+	}
+	
     CCDictionary* framesDict = (CCDictionary*)dictionary->objectForKey("frames");
     CCArray* keysToRemove = CCArray::create();
 
@@ -412,4 +489,34 @@ CCSpriteFrame* CCSpriteFrameCache::spriteFrameByName(const char *pszName)
     return frame;
 }
 
+CCDictionary* CCSpriteFrameCache::getPlistDictionary(std::string strPlist, bool bForce)
+{
+	std::map<std::string, CCDictionary*>::iterator iter = m_cachePlistDictionary.find(strPlist);
+	if (iter != m_cachePlistDictionary.end())
+	{
+		return iter->second;
+	}
+
+	if (bForce)
+	{
+		CCDictionary* dict = CCDictionary::createWithContentsOfFileThreadSafe(strPlist.c_str());
+		m_cachePlistDictionary[strPlist] = dict;
+		return dict;	
+	}
+	else
+	{
+		return NULL;
+	}
+}
+
+void CCSpriteFrameCache::clearCachePlistDictionary()
+{
+	for (std::map<std::string, CCDictionary*>::iterator iter = m_cachePlistDictionary.begin(); iter != m_cachePlistDictionary.end(); ++iter)
+	{
+		CCDictionary* dict = iter->second;
+		CC_SAFE_RELEASE(dict);
+	}
+	m_cachePlistDictionary.clear();
+	
+}
 NS_CC_END

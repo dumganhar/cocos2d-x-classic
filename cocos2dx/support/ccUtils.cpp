@@ -22,6 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ****************************************************************************/
 #include "ccUtils.h"
+#include <algorithm>
+#include <sstream>
 
 namespace cocos2d {
 
@@ -34,6 +36,62 @@ unsigned long ccNextPOT(unsigned long x)
     x = x | (x >> 8);
     x = x | (x >>16);
     return x + 1;
+}
+
+std::string ccFileName(const std::string& filePath)
+{
+    std::string path(filePath);
+    std::replace(path.begin(), path.end(), '\\', '/');
+
+    if (filePath.empty() || '/' == filePath[filePath.length()-1])
+    {
+        return "";
+    }
+
+    size_t s = path.find_last_of('/');
+    if (std::string::npos == s)
+    {
+        return filePath;
+    }
+
+    size_t e = path.find_last_of('.');
+    if (std::string::npos == e)
+    {
+        return path.substr(s + 1);
+    }
+
+    if (s > e)
+    {
+        return "";
+    }
+
+    return path.substr(s+1, e-s-1);
+}
+
+int ccHash(const char* s)
+{
+    int hash = 0;
+    int length = strlen(s);
+    for (int i=0; i<length; ++i)
+    {
+        hash += s[i] * 89;
+    }
+
+    return hash;
+}
+
+char ccBitrand(char byte)
+{
+    return ((byte&0x0f)<<4) | ((byte&0xf0)>>4);
+}
+
+template<class T>
+void ccToString(std::string& result, const T& t)
+{
+	std::ostringstream oss;
+	oss << t;
+
+	result = oss.str();
 }
 
 }

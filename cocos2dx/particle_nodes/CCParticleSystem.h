@@ -360,7 +360,9 @@ public:
     */
 protected:
     bool m_bIsAutoRemoveOnFinish;
+	float m_fOpacityScale;//透明度比例
 public:
+	void setOpacityScale(float fOpacityScale) { m_fOpacityScale = fOpacityScale; } //透明度比例
     virtual bool isAutoRemoveOnFinish();
     virtual void setAutoRemoveOnFinish(bool var);
 
@@ -435,6 +437,11 @@ private:
     /** Internal use only, it's used by EngineDataManager class for Android platform */
     static void setTotalParticleCountFactor(float factor) { g_totalParticleCountFactor = factor; }
 
+	////////////////////////////////////////////////////////
+	// add by camelliu
+	tCCParticle* getParticleByIndex(int iIndex);
+	void destroyParticleByIndex(int iIndex);
+	////////////////////////////////////////////////////////
 protected:
     virtual void updateBlendFunc();
 

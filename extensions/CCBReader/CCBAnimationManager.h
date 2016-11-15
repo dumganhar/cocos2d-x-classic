@@ -96,11 +96,11 @@ public:
     void moveAnimationsFromNode(CCNode* fromNode, CCNode* toNode);
 
     /** @deprecated This interface will be deprecated sooner or later.*/
-    CC_DEPRECATED_ATTRIBUTE void runAnimations(const char *pName, float fTweenDuration);
+    void runAnimations(const char *pName, float fTweenDuration);
     /** @deprecated This interface will be deprecated sooner or later.*/
-    CC_DEPRECATED_ATTRIBUTE void runAnimations(const char *pName);
+    void runAnimations(const char *pName);
     /** @deprecated This interface will be deprecated sooner or later.*/
-    CC_DEPRECATED_ATTRIBUTE void runAnimations(int nSeqId, float fTweenDuraiton);
+    void runAnimations(int nSeqId, float fTweenDuraiton);
 
     void runAnimationsForSequenceNamedTweenDuration(const char *pName, float fTweenDuration);
     void runAnimationsForSequenceNamed(const char *pName);

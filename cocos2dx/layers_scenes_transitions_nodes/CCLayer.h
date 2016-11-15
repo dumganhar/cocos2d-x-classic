@@ -202,7 +202,7 @@ public:
     virtual bool isCascadeColorEnabled();
     virtual void setCascadeColorEnabled(bool cascadeColorEnabled);
     
-    virtual void setOpacityModifyRGB(bool bValue) {}
+    virtual void setOpacityModifyRGB(bool /*bValue*/) {}
     virtual bool isOpacityModifyRGB() { return false; }
 protected:
 	GLubyte		_displayedOpacity, _realOpacity;

@@ -35,6 +35,7 @@ import android.os.Build;
 import android.util.DisplayMetrics;
 import android.view.Display;
 import android.view.WindowManager;
+import android.os.Vibrator;
 
 public class Cocos2dxHelper {
 	// ===========================================================
@@ -212,6 +213,21 @@ public class Cocos2dxHelper {
 	public static void end() {
 		Cocos2dxHelper.sCocos2dMusic.end();
 		Cocos2dxHelper.sCocos2dSound.end();
+	}
+
+	public static void vibrate(long time)
+    {
+    	Cocos2dxHelper.sCocos2dSound.vibrate(time);
+    }
+	
+	public static void vibrateWithPattern(long pattern[], int repeat)
+	{
+		Cocos2dxHelper.sCocos2dSound.vibrateWithPattern(pattern, repeat);
+	}
+	
+	public static void cancelVibrate()
+	{
+		Cocos2dxHelper.sCocos2dSound.cancelVibrate();
 	}
 
 	public static void onResume() {

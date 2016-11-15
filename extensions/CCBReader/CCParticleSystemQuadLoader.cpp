@@ -24,12 +24,17 @@
 #define PROPERTY_STARTRADIUS "startRadius"
 #define PROPERTY_ENDRADIUS "endRadius"
 #define PROPERTY_ROTATEPERSECOND "rotatePerSecond"
+//新增属性
+#define PROPERTY_POSITIONTYPE "particlePositionType"
+#define PROPERTY_DELAYTIME "delayTime"
 
 NS_CC_EXT_BEGIN
 
 void CCParticleSystemQuadLoader::onHandlePropTypeIntegerLabeled(CCNode * pNode, CCNode * pParent, const char * pPropertyName, int pIntegerLabeled, CCBReader * pCCBReader) {
     if(strcmp(pPropertyName, PROPERTY_EMITERMODE) == 0) {
         ((CCParticleSystemQuad *)pNode)->setEmitterMode(pIntegerLabeled);
+    } else if (strcmp(pPropertyName, PROPERTY_POSITIONTYPE) == 0) {
+        ((CCParticleSystemQuad *)pNode)->setPositionType((tCCPositionType)pIntegerLabeled);
     } else {
         CCNodeLoader::onHandlePropTypeIntegerLabeled(pNode, pParent, pPropertyName, pIntegerLabeled, pCCBReader);
     }
@@ -126,10 +131,35 @@ void CCParticleSystemQuadLoader::onHandlePropTypeBlendFunc(CCNode * pNode, CCNod
 }
 
 void CCParticleSystemQuadLoader::onHandlePropTypeTexture(CCNode * pNode, CCNode * pParent, const char * pPropertyName, CCTexture2D * pCCTexture2D, CCBReader * pCCBReader) {
-    if(strcmp(pPropertyName, PROPERTY_TEXTURE) == 0) {
-        ((CCParticleSystemQuad *)pNode)->setTexture(pCCTexture2D);
+    if(strcmp(pPropertyName, PROPERTY_TEXTURE) == 0) 
+	{
+		if (NULL != pCCTexture2D)
+		{
+			((CCParticleSystemQuad *)pNode)->setTexture(pCCTexture2D);
+		}
+		else
+		{
+			CCLOG("ERROR: CCParticleSystemQuadExLoader::onHandlePropTypeTexture Texture NULL");
+			assert(false);
+		}        
     } else {
         CCNodeLoader::onHandlePropTypeTexture(pNode, pParent, pPropertyName, pCCTexture2D, pCCBReader);
+    }
+}
+
+/*
+ * Degrees类型属性解释器
+ */
+void CCParticleSystemQuadLoader::onHandlePropTypeDegrees(CCNode * pNode, CCNode * pParent, const char* pPropertyName, float pDegrees, CCBReader * pCCBReader)
+{
+    if(strcmp(pPropertyName, PROPERTY_DELAYTIME) == 0) {
+		if(pDegrees == 0){
+			return;
+		}
+
+        ((CCParticleSystemQuad *)pNode)->setDelayTime(pDegrees);
+    } else {
+        CCNodeLoader::onHandlePropTypeDegrees(pNode, pParent, pPropertyName, pDegrees, pCCBReader);
     }
 }
 

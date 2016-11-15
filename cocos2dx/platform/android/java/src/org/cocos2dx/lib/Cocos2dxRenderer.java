@@ -167,6 +167,7 @@ public class Cocos2dxRenderer implements GLSurfaceView.Renderer {
 	private static native void nativeInit(final int pWidth, final int pHeight);
 	private static native void nativeOnPause();
 	private static native void nativeOnResume();
+	private static native void nativeOnScreenSizeChange(final int pWidth, final int pHeight);//canny
 
 	public void handleActionDown(final int pID, final float pX, final float pY) {
 		Cocos2dxRenderer.nativeTouchesBegin(pID, pX, pY);

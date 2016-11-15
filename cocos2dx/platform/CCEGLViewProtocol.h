@@ -69,6 +69,11 @@ public:
      */
     virtual void setFrameSize(float width, float height);
 
+     /**
+     *   the frame size of EGL view changed notify
+     */
+    virtual void updateFrameSize(float width, float height);
+
     /**
      * Get the visible area size of opengl viewport.
      */
@@ -88,7 +93,7 @@ public:
      *                         [2] kResolutionNoBorder Full screen without black border: if the design resolution ratio of width to height is different from the screen resolution ratio, two areas of your game view will be cut.
      *                         [3] kResolutionShowAll  Full screen with black border: if the design resolution ratio of width to height is different from the screen resolution ratio, two black borders will be shown.
      */
-    virtual void setDesignResolutionSize(float width, float height, ResolutionPolicy resolutionPolicy);
+    virtual void setDesignResolutionSize(float width, float height, ResolutionPolicy resolutionPolicy , bool bInit = true);
 
     /** Get design resolution size.
      *  Default resolution size is the same as 'getFrameSize'.
@@ -102,12 +107,12 @@ public:
      * Set opengl view port rectangle with points.
      */
     virtual void setViewPortInPoints(float x , float y , float w , float h);
-
+    virtual void setViewPortAbsolute(float x , float y , float w , float h);
     /**
      * Set Scissor rectangle with points.
      */
     virtual void setScissorInPoints(float x , float y , float w , float h);
-
+    virtual void setScissorAbsolute(float x , float y , float w , float h);
     /**
      * Get whether GL_SCISSOR_TEST is enable
      */
@@ -123,6 +128,8 @@ public:
     const char* getViewName();
 
     /** Touch events are handled by default; if you want to customize your handlers, please override these functions: */
+    virtual void setMulTouchEnable(bool bFlag) { m_bMulTouch = bFlag;};
+    virtual bool getMulTouchEnable() { return m_bMulTouch;};
     virtual void handleTouchesBegin(int num, int ids[], float xs[], float ys[]);
     virtual void handleTouchesMove(int num, int ids[], float xs[], float ys[]);
     virtual void handleTouchesEnd(int num, int ids[], float xs[], float ys[]);
@@ -142,12 +149,17 @@ public:
      * Get scale factor of the vertical direction.
      */
     float getScaleY() const;
+    
+    void clearTouchEvent();
+
+	CCRect getGLViewPort(){return m_glViewPort;}
 private:
     void getSetOfTouchesEndOrCancel(CCSet& set, int num, int ids[], float xs[], float ys[]);
 
 protected:
     EGLTouchDelegate* m_pDelegate;
 
+    bool m_bMulTouch;
     // real screen size
     CCSize m_obScreenSize;
     // resolution size, it is the size appropriate for the app resources.
@@ -160,6 +172,13 @@ protected:
     float  m_fScaleX;
     float  m_fScaleY;
     ResolutionPolicy m_eResolutionPolicy;
+
+
+	//  [11/28/2013 gusterzhai]
+	CCRect m_glViewPort;
+
+    //canny 
+    CCSize m_orgDesignResolutionSize;
 };
 
 // end of platform group

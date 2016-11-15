@@ -26,43 +26,6 @@
 #include "cocos2d.h"
 #include "ExtensionMacros.h"
 
-#if CC_ENABLE_CHIPMUNK_INTEGRATION
 
-#include "chipmunk.h"
-
-NS_CC_EXT_BEGIN
-
-/**
- A CCBaseData that draws the components of a physics engine.
- 
- Supported physics engines:
- - Chipmunk
- - Objective-Chipmunk
- 
- @since v2.1
- */
-
-class CCPhysicsDebugNode : public CCDrawNode
-{
-protected:
-    cpSpace *m_pSpacePtr;
-    
-public:
-    /** Create a debug node for a regular Chipmunk space. */
-    static CCPhysicsDebugNode* create(cpSpace *space);
-    
-    virtual ~CCPhysicsDebugNode();
-    
-    virtual void draw();
-    
-    cpSpace* getSpace() const;
-    void setSpace(cpSpace *space);
-    
-    CCPhysicsDebugNode();
-};
-
-NS_CC_EXT_END
-
-#endif // CC_ENABLE_CHIPMUNK_INTEGRATION
 
 #endif // __PHYSICSNODES_DEBUGNODE_H__

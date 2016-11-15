@@ -111,11 +111,21 @@ bool CCFileUtilsAndroid::isAbsolutePath(const std::string& strPath)
 
 unsigned char* CCFileUtilsAndroid::getFileData(const char* pszFileName, const char* pszMode, unsigned long * pSize)
 {    
+    return doGetFileData(pszFileName, pszMode, pSize, false);
+}
+
+unsigned char* CCFileUtilsAndroid::getFileDataForAsync(const char* pszFileName, const char* pszMode, unsigned long * pSize)
+{
+    return doGetFileData(pszFileName, pszMode, pSize, true);
+}
+
+unsigned char* CCFileUtilsAndroid::doGetFileData(const char* pszFileName, const char* pszMode, unsigned long * pSize, bool forAsync)
+{
     if (m_beforeReadFileHook != NULL)
     {
         m_beforeReadFileHook();
     }
-
+    
     unsigned char * pData = 0;
 
     if ((! pszFileName) || (! pszMode) || 0 == strlen(pszFileName))
@@ -127,8 +137,14 @@ unsigned char* CCFileUtilsAndroid::getFileData(const char* pszFileName, const ch
 
     if (fullPath[0] != '/')
     {
-        //CCLOG("GETTING FILE RELATIVE DATA: %s", pszFileName);
-        pData = s_pZipFile->getFileData(fullPath.c_str(), pSize);
+        if (forAsync)
+        {
+            pData = s_pZipFile->getFileData(fullPath.c_str(), pSize, s_pZipFile->_dataThread);
+        }
+        else
+        {
+            pData = s_pZipFile->getFileData(fullPath.c_str(), pSize);
+        }
     }
     else
     {
@@ -168,6 +184,13 @@ string CCFileUtilsAndroid::getWritablePath()
 {
     // Fix for Nexus 10 (Android 4.2 multi-user environment)
     // the path is retrieved through Java Context.getCacheDir() method
+    static string s_dir("");
+
+    if (!s_dir.empty())
+    {
+        return s_dir;
+    }
+
     string dir("");
     string tmp = getFileDirectoryJNI();
 
@@ -175,6 +198,7 @@ string CCFileUtilsAndroid::getWritablePath()
     {
         dir.append(tmp).append("/");
 
+        s_dir = dir;
         return dir;
     }
     else

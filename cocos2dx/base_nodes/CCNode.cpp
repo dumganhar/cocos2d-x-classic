@@ -24,6 +24,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ****************************************************************************/
+#include "CCBatchNodeMgr.h"
 #include "cocoa/CCString.h"
 #include "CCNode.h"
 #include "support/CCPointExtension.h"
@@ -40,6 +41,7 @@ THE SOFTWARE.
 #include "kazmath/GL/matrix.h"
 #include "support/component/CCComponent.h"
 #include "support/component/CCComponentContainer.h"
+#include "support/CCProfiling.h"
 
 #if CC_NODE_RENDER_SUBPIXEL
 #define RENDER_IN_SUBPIXEL
@@ -91,6 +93,8 @@ CCNode::CCNode(void)
 , m_nScriptHandler(0)
 , m_nUpdateScriptHandler(0)
 , m_pComponentContainer(NULL)
+, m_pOwnScheduler(NULL)
+, m_pOwnActionManager(NULL)
 {
     // set default scheduler and actionManager
     CCDirector *director = CCDirector::sharedDirector();
@@ -132,6 +136,12 @@ CCNode::~CCNode(void)
             if (pChild)
             {
                 pChild->m_pParent = NULL;
+
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_WIN32)
+				// 用于检查隐形的内存泄露,如果断言失效，请根据上下文检查代码 [12/13/2013 gusterzhai]
+				//assert(pChild->m_uAutoReleaseCount + 1 == pChild->retainCount());
+#endif
+				
             }
         }
     }
@@ -142,6 +152,12 @@ CCNode::~CCNode(void)
           // m_pComsContainer
     m_pComponentContainer->removeAll();
     CC_SAFE_DELETE(m_pComponentContainer);
+
+
+	CC_SAFE_RELEASE(m_pOwnScheduler);
+	CC_SAFE_RELEASE(m_pOwnActionManager);
+
+	
 }
 
 bool CCNode::init()
@@ -222,6 +238,11 @@ void CCNode::setRotation(float newRotation)
     m_bTransformDirty = m_bInverseDirty = true;
 }
 
+void CCNode::setRota(float newRotation)
+{
+	setRotation(newRotation);
+}
+
 float CCNode::getRotationX()
 {
     return m_fRotationX;
@@ -295,6 +316,11 @@ void CCNode::setPosition(const CCPoint& newPosition)
 {
     m_obPosition = newPosition;
     m_bTransformDirty = m_bInverseDirty = true;
+}
+
+void CCNode::setPos(const CCPoint& newPosition)
+{
+	setPosition(newPosition);
 }
 
 void CCNode::getPosition(float* x, float* y)
@@ -457,6 +483,25 @@ int CCNode::getTag() const
 /// tag setter
 void CCNode::setTag(int var)
 {
+
+//tag一样就报错 但是现在界面文件tag全都是一样,。 后面考虑要不要改下 ....todo 
+	/*
+#ifdef _WIN32
+	if (m_pParent)
+	{
+		unsigned int count = m_pParent->getChildren()->count();
+		for (unsigned int i = 1; i < count; ++i)
+		{
+			CCNode* pNode = (CCNode*)m_pParent->getChildren()->objectAtIndex(i);
+			if (pNode && pNode->getTag() == var && pNode != this && var > 0)
+			{
+				assert(false);
+			}
+		}
+	}
+#endif
+	*/
+
     m_nTag = var;
 }
 
@@ -578,8 +623,8 @@ CCNode* CCNode::getChildByTag(int aTag)
                 return pNode;
         }
     }
-    return NULL;
-}
+    return NULL; 
+}	
 
 /* "add" logic MUST only be on this method
 * If a class want's to extend the 'addChild' behavior it only needs
@@ -589,6 +634,25 @@ void CCNode::addChild(CCNode *child, int zOrder, int tag)
 {    
     CCAssert( child != NULL, "Argument must be non-nil");
     CCAssert( child->m_pParent == NULL, "child already added. It can't be added again");
+
+	//tag一样就报错 但是现在界面文件tag全都是一样,。 后面考虑要不要改下 ....todo 
+	/*
+#ifdef _WIN32
+	if (m_pChildren)
+	{
+		unsigned int count = m_pChildren->count();
+
+		for (unsigned int i = 1; i < count; ++i)
+		{
+			CCNode* pNode = (CCNode*)m_pChildren->objectAtIndex(i);
+			if (pNode && pNode->getTag() == tag && tag > 0)
+			{
+				assert(false);
+			}
+		}
+	}
+#endif
+	*/
 
     if( ! m_pChildren )
     {
@@ -760,6 +824,7 @@ void CCNode::reorderChild(CCNode *child, int zOrder)
 
 void CCNode::sortAllChildren()
 {
+	CC_PROFILER_HELPER;
     if (m_bReorderChildDirty)
     {
         int i,j,length = m_pChildren->data->num;
@@ -786,7 +851,6 @@ void CCNode::sortAllChildren()
         m_bReorderChildDirty = false;
     }
 }
-
 
  void CCNode::draw()
  {
@@ -883,6 +947,7 @@ void CCNode::transform()
 
     kmGLMultMatrix( &transfrom4x4 );
 
+	kmGLGetMatrix(KM_GL_MODELVIEW, &_modelViewTransform);
 
     // XXX: Expensive calls. Camera should be integrated into the cached affine matrix
     if ( m_pCamera != NULL && !(m_pGrid != NULL && m_pGrid->isActive()) )
@@ -1300,6 +1365,118 @@ void CCNode::removeAllComponents()
     m_pComponentContainer->removeAll();
 }
 
+
+void CCNode::setOwnScheduler(CCScheduler* pScheduler)
+{
+	if (m_pOwnScheduler != pScheduler)
+	{
+		CC_SAFE_RETAIN(pScheduler);
+		CC_SAFE_RELEASE(m_pOwnScheduler);
+		m_pOwnScheduler = pScheduler;
+	}
+}
+
+CCScheduler* CCNode::getOwnScheduler()
+{
+	return m_pOwnScheduler;
+}
+
+
+void CCNode::setOwnActionManager(CCActionManager* pActionManager)
+{
+	if (m_pOwnActionManager != pActionManager)
+	{
+		CC_SAFE_RETAIN(pActionManager);
+		CC_SAFE_RELEASE(m_pOwnActionManager);
+		m_pOwnActionManager = pActionManager;
+	}    
+}
+
+CCActionManager* CCNode::getOwnActionManager()
+{
+	return m_pOwnActionManager;
+}
+
+//此处无递归 看需求可以增加递归
+void CCNode::iteratorSetChildActionmanager(CCActionManager* pManager,CCScheduler* pScheduler)
+{
+	setActionManager(pManager);
+	setScheduler(pScheduler);
+
+	CCArray* pChildren = getChildren();
+	if(!pChildren)
+	{
+		return;
+	}
+	int iCount = pChildren->count();
+	for(int i = 0; i < iCount; i++)
+	{
+		CCNode* pChildNode = (CCNode*)pChildren->objectAtIndex(i);
+		pChildNode->iteratorSetChildActionmanager(pManager,pScheduler);
+	}
+}
+
+void CCNode::iteratorSetChildShader(CCGLProgram* programe)
+{
+	setShaderProgram(programe);
+	CCArray* pChildren = getChildren();
+	if(!pChildren)
+	{
+		return;
+	}
+	int iCount = pChildren->count();
+	for(int i = 0; i < iCount; i++)
+	{
+		CCNode* pChildNode = (CCNode*)pChildren->objectAtIndex(i);
+		pChildNode->iteratorSetChildShader(programe);
+	}
+}
+
+
+CCNode* CCNode::iteratorFindChildByTag(int nTag)
+{
+	if (m_nTag == nTag)
+	{
+		return this;
+	}
+	
+	CCArray* pChildren = getChildren();
+	if(!pChildren)
+	{
+		return NULL;
+	}
+	int iCount = pChildren->count();
+	CCNode* pNode = NULL;
+	for(int i = 0; i < iCount; i++)
+	{
+		CCNode* pChildNode = (CCNode*)pChildren->objectAtIndex(i);
+		if (!pNode)
+		{
+			pNode = pChildNode->iteratorFindChildByTag(nTag);
+			if (pNode)
+			{
+				return pNode;
+			}
+		}
+	}
+	return NULL;
+}
+
+void CCNode::createOwnActionmanager(CCNode* pSchedulerNode)
+{
+	if (!m_pOwnScheduler)
+	{
+		m_pOwnScheduler = new CCScheduler();
+		// action manager
+		m_pOwnActionManager = new CCActionManager();
+		pSchedulerNode->getScheduler()->scheduleUpdateForTarget(m_pOwnScheduler, kCCPrioritySystem, false);
+		m_pOwnScheduler->scheduleUpdateForTarget(m_pOwnActionManager, kCCPrioritySystem, false);
+		setScheduler(m_pOwnScheduler);
+		setActionManager(m_pOwnActionManager);
+		iteratorSetChildActionmanager(m_pOwnActionManager,m_pOwnScheduler);
+	}
+}
+
 // CCNodeRGBA
 CCNodeRGBA::CCNodeRGBA()
 : _displayedOpacity(255)
@@ -1323,6 +1500,21 @@ bool CCNodeRGBA::init()
     }
     return false;
 }
+
+CCNodeRGBA * CCNodeRGBA::create(void)
+{
+	CCNodeRGBA * pRet = new CCNodeRGBA();
+    if (pRet && pRet->init())
+    {
+        pRet->autorelease();
+    }
+    else
+    {
+        CC_SAFE_DELETE(pRet);
+    }
+	return pRet;
+}
+
 
 GLubyte CCNodeRGBA::getOpacity(void)
 {
@@ -1352,7 +1544,7 @@ void CCNodeRGBA::setOpacity(GLubyte opacity)
 
 void CCNodeRGBA::updateDisplayedOpacity(GLubyte parentOpacity)
 {
-	_displayedOpacity = _realOpacity * parentOpacity/255.0;
+	_displayedOpacity = GLubyte(_realOpacity * parentOpacity/255.0);
 	
     if (_cascadeOpacityEnabled)
     {
@@ -1407,9 +1599,9 @@ void CCNodeRGBA::setColor(const ccColor3B& color)
 
 void CCNodeRGBA::updateDisplayedColor(const ccColor3B& parentColor)
 {
-	_displayedColor.r = _realColor.r * parentColor.r/255.0;
-	_displayedColor.g = _realColor.g * parentColor.g/255.0;
-	_displayedColor.b = _realColor.b * parentColor.b/255.0;
+	_displayedColor.r = GLubyte(_realColor.r * parentColor.r/255.0);
+	_displayedColor.g = GLubyte(_realColor.g * parentColor.g/255.0);
+	_displayedColor.b = GLubyte(_realColor.b * parentColor.b/255.0);
     
     if (_cascadeColorEnabled)
     {
@@ -1434,5 +1626,7 @@ void CCNodeRGBA::setCascadeColorEnabled(bool cascadeColorEnabled)
 {
     _cascadeColorEnabled = cascadeColorEnabled;
 }
+
+
 
 NS_CC_END
