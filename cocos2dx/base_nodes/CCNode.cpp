@@ -53,7 +53,7 @@ NS_CC_BEGIN
 
 // XXX: Yes, nodes might have a sort problem once every 15 days if the game runs at 60 FPS and each frame sprites are reordered.
 static int s_globalOrderOfArrival = 1;
-int CCNode::s_attachedNodeCount = 0;
+static int s_attachedNodeCount = 0;
 
 CCNode::CCNode(void)
 : m_fRotationX(0.0f)
@@ -1475,6 +1475,11 @@ void CCNode::createOwnActionmanager(CCNode* pSchedulerNode)
 		setActionManager(m_pOwnActionManager);
 		iteratorSetChildActionmanager(m_pOwnActionManager,m_pOwnScheduler);
 	}
+}
+
+int CCNode::getAttachedNodeCount()
+{
+	return s_attachedNodeCount;
 }
 
 // CCNodeRGBA

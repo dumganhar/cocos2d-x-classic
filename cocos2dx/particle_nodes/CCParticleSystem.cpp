@@ -102,8 +102,8 @@ static CCParticleSystemStatistics g_particleSystemStatistics;
 //  cocos2d uses a another approach, but the results are almost identical. 
 //
 
-std::vector<CCParticleSystem*> CCParticleSystem::g_allInstances;
-float CCParticleSystem::g_totalParticleCountFactor = 1.0f;
+static std::vector<CCParticleSystem*> g_allInstances;
+static float g_totalParticleCountFactor = 1.0f;
 
 CCParticleSystem::CCParticleSystem()
 : m_sPlistFile("")
@@ -1445,6 +1445,18 @@ void CCParticleSystem::setScaleY(float newScaleY)
     m_bTransformSystemDirty = true;
     CCNode::setScaleY(newScaleY);
 }
+
+void CCParticleSystem::setTotalParticleCountFactor( float factor )
+{
+	g_totalParticleCountFactor = factor;
+}
+
+std::vector<CCParticleSystem*>& CCParticleSystem::getAllParticleSystems()
+{
+	 return g_allInstances;
+}
+
+
 
 
 NS_CC_END

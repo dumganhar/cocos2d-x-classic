@@ -430,24 +430,22 @@ public:
 
     /** Gets all ParticleSystem references
      */
-    static std::vector<CCParticleSystem*>& getAllParticleSystems() { return g_allInstances; }
+    static std::vector<CCParticleSystem*>& getAllParticleSystems();
 
-private:
-    friend class EngineDataManager;
-    /** Internal use only, it's used by EngineDataManager class for Android platform */
-    static void setTotalParticleCountFactor(float factor) { g_totalParticleCountFactor = factor; }
 
 	////////////////////////////////////////////////////////
 	// add by camelliu
 	tCCParticle* getParticleByIndex(int iIndex);
 	void destroyParticleByIndex(int iIndex);
 	////////////////////////////////////////////////////////
+private:
+    friend class EngineDataManager;
+    /** Internal use only, it's used by EngineDataManager class for Android platform */
+    static void setTotalParticleCountFactor(float factor);
+
+	
 protected:
     virtual void updateBlendFunc();
-
-    static std::vector<CCParticleSystem*> g_allInstances;
-    /** The factor affects the total particle count, its value should be 0.0f ~ 1.0f, default 1.0f*/
-    static float g_totalParticleCountFactor;
 };
 
 // end of particle_nodes group

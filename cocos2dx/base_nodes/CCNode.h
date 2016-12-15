@@ -155,7 +155,7 @@ public:
     /**
      * Gets count of nodes those are attached to scene graph.
      */
-    static int getAttachedNodeCount() { return s_attachedNodeCount; }
+    static int getAttachedNodeCount();
     
     /**
      * Gets the description string. It makes debugging easier.
@@ -1430,8 +1430,6 @@ protected:
     CC_PROPERTY(CCActionManager*, m_pOwnActionManager, OwnActionManager);
 
     CCComponentContainer *m_pComponentContainer;        ///< Dictionary of components
-
-    static int s_attachedNodeCount;
 };
 
 //#pragma mark - CCNodeRGBA
