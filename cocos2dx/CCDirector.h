@@ -91,6 +91,14 @@ public:
 	virtual void onMainLoopEnd() = 0;
 };
 
+
+class CCMonitorListener
+{
+public:
+	virtual void monitorDrawsAndParticle(int draws, int particleNum) = 0;
+	virtual void monitorMainLoopCostTime(int costTime) = 0;
+};
+
 typedef std::vector<CCDrawSceneListener*> VECCCDRAWSCENELISTENER;
 ///////////////////////////////////////////////////////////////////
 
@@ -370,7 +378,7 @@ public:
 
 	void flushDraw();
     
-       /**
+    /**
      *  Gets Frame Rate.
      * @js NA
      */
@@ -420,12 +428,15 @@ public:
      */
     CC_PROPERTY(CCActionManager*, m_pSceneSlowActionManager, SlowActionManager);
 //////////////////////////////////////////////////////////////////////
-	bool m_bPrintCurFrameCostTime;
-	bool m_bOpenTest;
+
 // add by camel
 public:
 	void registerDrawSceneListener(CCDrawSceneListener* pListener);
 	void unregisterDrawSceneListener(CCDrawSceneListener* pListener);
+
+	//¼àÌýÐÔÄÜ
+	void registerMonitorListener(CCMonitorListener* pListener);
+	void unregisterMonitorListener();
 //////////////////////////////////////////////////////////////////////
     
     int  fireeEvent_BrowserWillOpen(const char * url);
@@ -463,6 +474,8 @@ public:
 #endif
 
 protected:
+    virtual void startAnimation(SetIntervalReason reason) = 0;
+    virtual void setAnimationInterval(double interval, SetIntervalReason reason) = 0;
 
     void purgeDirector();
     bool m_bPurgeDirecotorInNextLoop; // this flag will be set to true in end()
@@ -498,6 +511,7 @@ protected:
 	CCLabelAtlas *m_pUdpServerDelayLabel;
 	CCLabelAtlas *m_pBulletNumLabel;
     CCLabelAtlas *m_pEnemyNumLabel;
+	CCLabelAtlas *m_pParticleSystemLabel;
 
     /** Whether or not the Director is paused */
     bool m_bPaused;
@@ -557,6 +571,7 @@ protected:
     
     
     CCBrowserEventListener *    m_pBrowserEventListener;
+	CCMonitorListener*			m_pMonitorListener;
 
 	bool m_bEnableThreadMutual;
 
@@ -604,6 +619,8 @@ public:
     virtual void stopAnimation();
 
 protected:
+    virtual void startAnimation(SetIntervalReason reason);
+    virtual void setAnimationInterval(double interval, SetIntervalReason reason);
 	bool m_bIsRendering;
 	bool m_bIsAnimationPlaying;
 };

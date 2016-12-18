@@ -630,7 +630,8 @@ bool CCScrollView::ccTouchBegan(CCTouch* touch, CCEvent* event)
     {
         return false;
     }
-    
+    //container改变大小后，这个属性没有得到及时更新。
+	updateInset();
     CCRect frame = getViewRect();
 	//修复ShowActivityIndicator后，无法接收到touchStop和touchCancel事件导致不响应触摸。
 	if (m_pTouches->count() == 1)

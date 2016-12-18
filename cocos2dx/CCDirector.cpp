@@ -65,6 +65,7 @@ THE SOFTWARE.
 #include "platform/CCImage.h"
 #include "CCEGLView.h"
 #include "CCConfiguration.h"
+#include "particle_nodes/CCParticleSystem.h"
 #include <pthread.h>
 
 #if CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID
@@ -109,12 +110,10 @@ CCDirector* CCDirector::sharedDirector(void)
 CCDirector::CCDirector(void)
 {
     m_pBrowserEventListener = 0;
+	m_pMonitorListener = 0;
 	m_bEnableThreadMutual = false;
 
 	m_bAutoBatch = false;
-
-	m_bPrintCurFrameCostTime = false;
-	m_bOpenTest = false;
 
 	m_9SpriteNoBatchNode = false;
 }
@@ -150,6 +149,7 @@ bool CCDirector::init(void)
 	m_pUdpServerDelayLabel = NULL;
 	m_pBulletNumLabel = NULL;
 	m_pEnemyNumLabel = NULL;
+	m_pParticleSystemLabel = NULL;
 	m_nNetTcpDelay = 0;
 	m_nNetUdpDelay = 0;
 	m_nUdpServerLostRate = 0;
@@ -206,7 +206,7 @@ bool CCDirector::init(void)
     CCPoolManager::sharedPoolManager()->push();
 
 #if CC_TARGET_PLATFORM == CC_PLATFORM_WIN32
-    m_bTextureDrawInfo = false;
+	m_bTextureDrawInfo = false;
 #endif
 
 #if CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID
@@ -257,6 +257,7 @@ CCDirector::~CCDirector(void)
 	CC_SAFE_RELEASE(m_pUdpServerDelayLabel);
 	CC_SAFE_RELEASE(m_pBulletNumLabel);
 	CC_SAFE_RELEASE(m_pEnemyNumLabel);
+	CC_SAFE_RELEASE(m_pParticleSystemLabel);
     
     CC_SAFE_RELEASE(m_pRunningScene);
     CC_SAFE_RELEASE(m_pNotificationNode);
@@ -364,6 +365,8 @@ void CCDirector::drawSceneImpl(void)
 		}
 	}	
 
+	CCParticleSystem::resetRunningParticleSystemCount();
+
 	////////////////////////////////////////////////////////////////
 	// add by camel
 	//CCProfiler::sharedProfiler()->beginTimingBlock("CCDirector::drawSceneImpl beforeDrawScene");
@@ -416,7 +419,12 @@ void CCDirector::drawSceneImpl(void)
     }
 
 	flushDraw();
-    
+
+    if(m_pMonitorListener)
+	{
+		int nCount = CCParticleSystem::getRunningParticleSystemCount();
+		m_pMonitorListener->monitorDrawsAndParticle(g_uNumberOfDraws, nCount);
+	}
     updateFrameRate();
 //    if (m_bDisplayStats)
 //    {
@@ -981,7 +989,7 @@ void CCDirector::pause(void)
     m_dOldAnimationInterval = m_dAnimationInterval;
 
     // when paused, don't consume CPU
-    setAnimationInterval(1 / 4.0);
+    setAnimationInterval(1 / 4.0, SET_INTERVAL_REASON_BY_DIRECTOR_PAUSE);
     m_bPaused = true;
 }
 
@@ -992,7 +1000,7 @@ void CCDirector::resume(void)
         return;
     }
 
-    setAnimationInterval(m_dOldAnimationInterval);
+    setAnimationInterval(m_dOldAnimationInterval, SET_INTERVAL_REASON_BY_ENGINE);
 
     if (CCTime::gettimeofdayCocos2d(m_pLastUpdate, NULL) != 0)
     {
@@ -1044,7 +1052,7 @@ void CCDirector::showStats(void)
             m_pSPFLabel->visit();
         }
 
-        if (m_pDelayLabel && m_pUdpServerDelayLabel && m_pBulletNumLabel && m_pEnemyNumLabel)
+        if (m_pDelayLabel && m_pUdpServerDelayLabel && m_pBulletNumLabel && m_pEnemyNumLabel && m_pParticleSystemLabel)
         {
 			int nNetTcpDelay = m_nNetTcpDelay;
 			if (nNetTcpDelay > 100000)
@@ -1058,18 +1066,24 @@ void CCDirector::showStats(void)
 				nNetUdpDelay = 99999;
 			}
 
-			sprintf(m_pszFPS, "%d %d", nNetTcpDelay, nNetUdpDelay);
+			sprintf(m_pszFPS, "%d  %d", nNetTcpDelay, nNetUdpDelay);
 			m_pDelayLabel->setString(m_pszFPS);
 
-			sprintf(m_pszFPS, "%d %d %d", m_nUdpServerLostRate, m_nUdpServerAvgDelay, m_nUdpServerRealTimeDelay);
+			sprintf(m_pszFPS, "%d  %d  %d", m_nUdpServerLostRate, m_nUdpServerAvgDelay, m_nUdpServerRealTimeDelay);
 			m_pUdpServerDelayLabel->setString(m_pszFPS);
 
-			sprintf(m_pszFPS, "%d %d", m_nMainBulletNum, m_nEnemyBulletNum);
+			sprintf(m_pszFPS, "%d  %d", m_nMainBulletNum, m_nEnemyBulletNum);
 			m_pBulletNumLabel->setString(m_pszFPS);
 
 			sprintf(m_pszFPS, "%d", m_nEnemyNum);
 			m_pEnemyNumLabel->setString(m_pszFPS);
+
+
+			int nCount = CCParticleSystem::getRunningParticleSystemCount();
+			sprintf(m_pszFPS, "%d", nCount);
+			m_pParticleSystemLabel->setString(m_pszFPS);
 			
+			m_pParticleSystemLabel->visit();
 			m_pBulletNumLabel->visit();
 			m_pEnemyNumLabel->visit();
             m_pUdpServerDelayLabel->visit();
@@ -1113,6 +1127,7 @@ void CCDirector::createStatsLabel()
 		CC_SAFE_RELEASE_NULL(m_pUdpServerDelayLabel);
 		CC_SAFE_RELEASE_NULL(m_pBulletNumLabel);
 		CC_SAFE_RELEASE_NULL(m_pEnemyNumLabel);
+		CC_SAFE_RELEASE_NULL(m_pParticleSystemLabel);
         textureCache->removeTextureForKey("cc_fps_images");
         CCFileUtils::sharedFileUtils()->purgeCachedEntries();
     }
@@ -1183,8 +1198,14 @@ void CCDirector::createStatsLabel()
 	m_pEnemyNumLabel->initWithString("000", texture, 12, 32, '.');
 	m_pEnemyNumLabel->setScale(factor);
 
+	m_pParticleSystemLabel = new CCLabelAtlas();
+	m_pParticleSystemLabel->setIgnoreContentScaleFactor(true);
+	m_pParticleSystemLabel->initWithString("000", texture, 12, 32, '.');
+	m_pParticleSystemLabel->setScale(factor);
+
     CCTexture2D::setDefaultAlphaPixelFormat(currentFormat);
 
+	m_pParticleSystemLabel->setPosition(ccpAdd(ccp(0, 127*factor), CC_DIRECTOR_STATS_POSITION));
 	m_pEnemyNumLabel->setPosition(ccpAdd(ccp(0, 101*factor), CC_DIRECTOR_STATS_POSITION));
 	m_pBulletNumLabel->setPosition(ccpAdd(ccp(0, 85*factor), CC_DIRECTOR_STATS_POSITION));
 	m_pUdpServerDelayLabel->setPosition(ccpAdd(ccp(0, 68*factor), CC_DIRECTOR_STATS_POSITION));
@@ -1362,6 +1383,16 @@ void CCDirector::unregisterDrawSceneListener(CCDrawSceneListener* pListener)
 		}
 	}
 }
+
+void CCDirector::registerMonitorListener(CCMonitorListener* pListener)
+{
+	m_pMonitorListener = pListener;
+}
+
+void CCDirector::unregisterMonitorListener()
+{
+	m_pMonitorListener = NULL;
+}
 //////////////////////////////////////////////////////////////////////
 
 int CCDirector::fireeEvent_BrowserWillOpen(const char * url)
@@ -1446,6 +1477,11 @@ bool CCDisplayLinkDirector::isRendering(void) const
 // so we now only support DisplayLinkDirector
 void CCDisplayLinkDirector::startAnimation(void)
 {
+    startAnimation(SET_INTERVAL_REASON_BY_ENGINE);
+}
+
+void CCDisplayLinkDirector::startAnimation(SetIntervalReason reason)
+{
     if (CCTime::gettimeofdayCocos2d(m_pLastUpdate, NULL) != 0)
     {
         CCLOG("cocos2d: DisplayLinkDirector: Error on gettimeofday");
@@ -1455,22 +1491,15 @@ void CCDisplayLinkDirector::startAnimation(void)
 #ifndef EMSCRIPTEN
 	if (CCApplication::sharedApplication())
 	{
-		CCApplication::sharedApplication()->setAnimationInterval(m_dAnimationInterval);
+		CCApplication::sharedApplication()->setAnimationIntervalForReason(m_dAnimationInterval, reason);
 	}    
 #endif // EMSCRIPTEN
 }
 
 void CCDisplayLinkDirector::mainLoop(void)
 {
-	if (CCProfiler::sharedProfiler()->isEnablePerFrameLog())
-	{
-		CCProfiler::sharedProfiler()->releaseAllTimers();
-	}	
-	
-	m_bPrintCurFrameCostTime = false;
 	long long startTime = 0;
-
-	if(m_bOpenTest)
+	if(m_pMonitorListener)
 	{
 		struct timeval tv;  
 		gettimeofday(&tv,NULL);
@@ -1479,6 +1508,11 @@ void CCDisplayLinkDirector::mainLoop(void)
 		startTime += tv.tv_usec / 1000;
 	}
 
+	if (CCProfiler::sharedProfiler()->isEnablePerFrameLog())
+	{
+		CCProfiler::sharedProfiler()->releaseAllTimers();
+	}	
+	
 
 	{
 		//root callnode 名字指定
@@ -1512,26 +1546,19 @@ void CCDisplayLinkDirector::mainLoop(void)
 	CCProfiler::sharedProfiler()->mergeCallTree();
 	if (CCProfiler::sharedProfiler()->isEnablePerFrameLog())
 	{
-		/*gettimeofday(&tv, NULL);
-		long long endTime = tv.tv_sec;
-		endTime *= 1000;
-		endTime += tv.tv_usec / 1000;
-
-		if(endTime - startTime < 50)
-		{
-			return;
-		}*/
 		CCProfiler::sharedProfiler()->displayTimers();	
 	}
 
-	if(m_bOpenTest && m_bPrintCurFrameCostTime)
+	//监控每帧数据 放在每帧的最后面
+	if(m_pMonitorListener)
 	{
 		struct timeval tv;  
 		gettimeofday(&tv,NULL);
 		long long endTime = tv.tv_sec;
 		endTime *= 1000;
 		endTime += tv.tv_usec / 1000;
-		CCLog("printAuidoTestData***current frame costtime = %lld, frame = %f", endTime - startTime, getFPS());
+		int costTime = (int)(endTime - startTime);
+		m_pMonitorListener->monitorMainLoopCostTime(costTime);
 	}
 }
 
@@ -1575,11 +1602,16 @@ void CCDisplayLinkDirector::stopAnimation(void)
 
 void CCDisplayLinkDirector::setAnimationInterval(double dValue)
 {
+    setAnimationInterval(dValue, SET_INTERVAL_REASON_BY_GAME);
+}
+
+void CCDisplayLinkDirector::setAnimationInterval(double dValue, SetIntervalReason reason)
+{
     m_dAnimationInterval = dValue;
 	if (m_bIsAnimationPlaying)
     {
         stopAnimation();
-        startAnimation();
+        startAnimation(reason);
     }    
 }
 

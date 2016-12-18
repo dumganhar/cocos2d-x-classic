@@ -55,6 +55,7 @@ CCMotionStreak::CCMotionStreak()
 , m_pColorPointer(NULL)
 , m_pTexCoords(NULL)
 , m_bJudgeValid(true)
+, m_bUpdateWhenPosChange(false)
 {
     m_tBlendFunc.src = GL_SRC_ALPHA;
     m_tBlendFunc.dst = GL_ONE_MINUS_SRC_ALPHA;
@@ -146,8 +147,13 @@ bool CCMotionStreak::initWithFade(float fade, float minSeg, float stroke, ccColo
 
 void CCMotionStreak::setPosition(const CCPoint& position)
 {
+	CCPoint posOld = m_tPositionR;
     m_bStartingPositionInitialized = true;
     m_tPositionR = position;
+	if (m_bUpdateWhenPosChange && !posOld.equals(m_tPositionR))
+	{
+		update(0);
+	}
 }
 
 void CCMotionStreak::tintWithColor(ccColor3B colors)

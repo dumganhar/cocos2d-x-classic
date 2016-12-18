@@ -277,6 +277,16 @@
 		1A950DFC16BB6661003F4508 /* CCFileUtils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1A950DFB16BB6661003F4508 /* CCFileUtils.cpp */; };
 		1AB7FB3F16D0D31800D35305 /* CCDevice.h in Headers */ = {isa = PBXBuildFile; fileRef = 1AB7FB3E16D0D31800D35305 /* CCDevice.h */; };
 		1AB7FB4116D0D4C600D35305 /* CCDevice.mm in Sources */ = {isa = PBXBuildFile; fileRef = 1AB7FB4016D0D4C600D35305 /* CCDevice.mm */; };
+		1AC1EBDF1E0272A4008DBC22 /* CCBatchNodeMgr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1AC1EBDD1E0272A4008DBC22 /* CCBatchNodeMgr.cpp */; };
+		1AC1EBE01E0272A4008DBC22 /* CCBatchNodeMgr.h in Headers */ = {isa = PBXBuildFile; fileRef = 1AC1EBDE1E0272A4008DBC22 /* CCBatchNodeMgr.h */; };
+		1AC1EBE71E0272CE008DBC22 /* CCCallNode.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1AC1EBE11E0272CE008DBC22 /* CCCallNode.cpp */; };
+		1AC1EBE81E0272CE008DBC22 /* CCCallNode.h in Headers */ = {isa = PBXBuildFile; fileRef = 1AC1EBE21E0272CE008DBC22 /* CCCallNode.h */; };
+		1AC1EBE91E0272CE008DBC22 /* CCCallTree.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1AC1EBE31E0272CE008DBC22 /* CCCallTree.cpp */; };
+		1AC1EBEA1E0272CE008DBC22 /* CCCallTree.h in Headers */ = {isa = PBXBuildFile; fileRef = 1AC1EBE41E0272CE008DBC22 /* CCCallTree.h */; };
+		1AC1EBEB1E0272CE008DBC22 /* CCProfilerLog.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1AC1EBE51E0272CE008DBC22 /* CCProfilerLog.cpp */; };
+		1AC1EBEC1E0272CE008DBC22 /* CCProfilerLog.h in Headers */ = {isa = PBXBuildFile; fileRef = 1AC1EBE61E0272CE008DBC22 /* CCProfilerLog.h */; };
+		1AC1EBEF1E0272F7008DBC22 /* CCPVRParzer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1AC1EBED1E0272F7008DBC22 /* CCPVRParzer.cpp */; };
+		1AC1EBF01E0272F7008DBC22 /* CCPVRParzer.h in Headers */ = {isa = PBXBuildFile; fileRef = 1AC1EBEE1E0272F7008DBC22 /* CCPVRParzer.h */; };
 		37EEEC05175DDF83003C1193 /* CCComponent.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 37EEEC01175DDF83003C1193 /* CCComponent.cpp */; };
 		37EEEC06175DDF83003C1193 /* CCComponent.h in Headers */ = {isa = PBXBuildFile; fileRef = 37EEEC02175DDF83003C1193 /* CCComponent.h */; };
 		37EEEC07175DDF83003C1193 /* CCComponentContainer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 37EEEC03175DDF83003C1193 /* CCComponentContainer.cpp */; };
@@ -584,6 +594,16 @@
 		1A950DFB16BB6661003F4508 /* CCFileUtils.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CCFileUtils.cpp; sourceTree = "<group>"; };
 		1AB7FB3E16D0D31800D35305 /* CCDevice.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CCDevice.h; sourceTree = "<group>"; };
 		1AB7FB4016D0D4C600D35305 /* CCDevice.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = CCDevice.mm; sourceTree = "<group>"; };
+		1AC1EBDD1E0272A4008DBC22 /* CCBatchNodeMgr.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CCBatchNodeMgr.cpp; sourceTree = "<group>"; };
+		1AC1EBDE1E0272A4008DBC22 /* CCBatchNodeMgr.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CCBatchNodeMgr.h; sourceTree = "<group>"; };
+		1AC1EBE11E0272CE008DBC22 /* CCCallNode.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CCCallNode.cpp; sourceTree = "<group>"; };
+		1AC1EBE21E0272CE008DBC22 /* CCCallNode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CCCallNode.h; sourceTree = "<group>"; };
+		1AC1EBE31E0272CE008DBC22 /* CCCallTree.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CCCallTree.cpp; sourceTree = "<group>"; };
+		1AC1EBE41E0272CE008DBC22 /* CCCallTree.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CCCallTree.h; sourceTree = "<group>"; };
+		1AC1EBE51E0272CE008DBC22 /* CCProfilerLog.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CCProfilerLog.cpp; sourceTree = "<group>"; };
+		1AC1EBE61E0272CE008DBC22 /* CCProfilerLog.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CCProfilerLog.h; sourceTree = "<group>"; };
+		1AC1EBED1E0272F7008DBC22 /* CCPVRParzer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CCPVRParzer.cpp; sourceTree = "<group>"; };
+		1AC1EBEE1E0272F7008DBC22 /* CCPVRParzer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CCPVRParzer.h; sourceTree = "<group>"; };
 		37EEEC01175DDF83003C1193 /* CCComponent.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CCComponent.cpp; sourceTree = "<group>"; };
 		37EEEC02175DDF83003C1193 /* CCComponent.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CCComponent.h; sourceTree = "<group>"; };
 		37EEEC03175DDF83003C1193 /* CCComponentContainer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CCComponentContainer.cpp; sourceTree = "<group>"; };
@@ -744,6 +764,8 @@
 		1551A370158F2ADE00E66CFE /* base_nodes */ = {
 			isa = PBXGroup;
 			children = (
+				1AC1EBDD1E0272A4008DBC22 /* CCBatchNodeMgr.cpp */,
+				1AC1EBDE1E0272A4008DBC22 /* CCBatchNodeMgr.h */,
 				1551A371158F2ADE00E66CFE /* CCAtlasNode.cpp */,
 				1551A372158F2ADE00E66CFE /* CCAtlasNode.h */,
 				1551A373158F2ADE00E66CFE /* CCNode.cpp */,
@@ -1054,6 +1076,12 @@
 		1551A5E7158F2ADE00E66CFE /* support */ = {
 			isa = PBXGroup;
 			children = (
+				1AC1EBE11E0272CE008DBC22 /* CCCallNode.cpp */,
+				1AC1EBE21E0272CE008DBC22 /* CCCallNode.h */,
+				1AC1EBE31E0272CE008DBC22 /* CCCallTree.cpp */,
+				1AC1EBE41E0272CE008DBC22 /* CCCallTree.h */,
+				1AC1EBE51E0272CE008DBC22 /* CCProfilerLog.cpp */,
+				1AC1EBE61E0272CE008DBC22 /* CCProfilerLog.h */,
 				1551A5E8158F2ADE00E66CFE /* base64.cpp */,
 				1551A5E9158F2ADE00E66CFE /* base64.h */,
 				154269DA15B5653000712A7F /* CCNotificationCenter.cpp */,
@@ -1128,6 +1156,8 @@
 		1551A60B158F2ADE00E66CFE /* textures */ = {
 			isa = PBXGroup;
 			children = (
+				1AC1EBED1E0272F7008DBC22 /* CCPVRParzer.cpp */,
+				1AC1EBEE1E0272F7008DBC22 /* CCPVRParzer.h */,
 				464EA09517533CDD004C192B /* CCTextureETC.cpp */,
 				464EA09617533CDD004C192B /* CCTextureETC.h */,
 				1551A60C158F2ADE00E66CFE /* CCTexture2D.cpp */,
@@ -1315,12 +1345,14 @@
 				1551A6B6158F2ADE00E66CFE /* cocos2d.h in Headers */,
 				1551A6B8158F2ADE00E66CFE /* aabb.h in Headers */,
 				1551A6B9158F2ADE00E66CFE /* mat4stack.h in Headers */,
+				1AC1EBEA1E0272CE008DBC22 /* CCCallTree.h in Headers */,
 				1551A6BA158F2ADE00E66CFE /* matrix.h in Headers */,
 				1551A6BB158F2ADE00E66CFE /* kazmath.h in Headers */,
 				1551A6BC158F2ADE00E66CFE /* mat3.h in Headers */,
 				1551A6BD158F2ADE00E66CFE /* mat4.h in Headers */,
 				1551A6BE158F2ADE00E66CFE /* neon_matrix_impl.h in Headers */,
 				1551A6BF158F2ADE00E66CFE /* plane.h in Headers */,
+				1AC1EBF01E0272F7008DBC22 /* CCPVRParzer.h in Headers */,
 				1551A6C0158F2ADE00E66CFE /* quaternion.h in Headers */,
 				1551A6C1158F2ADE00E66CFE /* ray2.h in Headers */,
 				1551A6C2158F2ADE00E66CFE /* utility.h in Headers */,
@@ -1364,6 +1396,7 @@
 				1551A81D158F2ADF00E66CFE /* ccShader_Position_uColor_vert.h in Headers */,
 				1551A81E158F2ADF00E66CFE /* ccShader_PositionColor_frag.h in Headers */,
 				1551A81F158F2ADF00E66CFE /* ccShader_PositionColor_vert.h in Headers */,
+				1AC1EBEC1E0272CE008DBC22 /* CCProfilerLog.h in Headers */,
 				1551A820158F2ADF00E66CFE /* ccShader_PositionTexture_frag.h in Headers */,
 				1551A821158F2ADF00E66CFE /* ccShader_PositionTexture_uColor_frag.h in Headers */,
 				1551A822158F2ADF00E66CFE /* ccShader_PositionTexture_uColor_vert.h in Headers */,
@@ -1373,6 +1406,7 @@
 				1551A826158F2ADF00E66CFE /* ccShader_PositionTextureColor_frag.h in Headers */,
 				1551A827158F2ADF00E66CFE /* ccShader_PositionTextureColor_vert.h in Headers */,
 				1551A828158F2ADF00E66CFE /* ccShader_PositionTextureColorAlphaTest_frag.h in Headers */,
+				1AC1EBE01E0272A4008DBC22 /* CCBatchNodeMgr.h in Headers */,
 				1551A82A158F2ADF00E66CFE /* CCShaderCache.h in Headers */,
 				1551A82B158F2ADF00E66CFE /* ccShaderEx_SwitchMask_frag.h in Headers */,
 				1551A82D158F2ADF00E66CFE /* ccShaders.h in Headers */,
@@ -1408,6 +1442,7 @@
 				1551A868158F2ADF00E66CFE /* CCTMXObjectGroup.h in Headers */,
 				1551A86A158F2ADF00E66CFE /* CCTMXTiledMap.h in Headers */,
 				1551A86C158F2ADF00E66CFE /* CCTMXXMLParser.h in Headers */,
+				1AC1EBE81E0272CE008DBC22 /* CCCallNode.h in Headers */,
 				1551A86D158F2ADF00E66CFE /* CCTouch.h in Headers */,
 				1551A86E158F2ADF00E66CFE /* CCTouchDelegateProtocol.h in Headers */,
 				1551A870158F2ADF00E66CFE /* CCTouchDispatcher.h in Headers */,
@@ -1539,6 +1574,7 @@
 				1551A6CC158F2ADE00E66CFE /* plane.c in Sources */,
 				1551A6CD158F2ADE00E66CFE /* quaternion.c in Sources */,
 				1551A6CE158F2ADE00E66CFE /* ray2.c in Sources */,
+				1AC1EBE91E0272CE008DBC22 /* CCCallTree.cpp in Sources */,
 				1551A6CF158F2ADE00E66CFE /* utility.c in Sources */,
 				1551A6D0158F2ADE00E66CFE /* vec2.c in Sources */,
 				1551A6D1158F2ADE00E66CFE /* vec3.c in Sources */,
@@ -1561,6 +1597,7 @@
 				1551A6F1158F2ADE00E66CFE /* CCParticleBatchNode.cpp in Sources */,
 				1551A6F3158F2ADE00E66CFE /* CCParticleExamples.cpp in Sources */,
 				1551A6F5158F2ADE00E66CFE /* CCParticleSystem.cpp in Sources */,
+				1AC1EBDF1E0272A4008DBC22 /* CCBatchNodeMgr.cpp in Sources */,
 				1551A6F7158F2ADE00E66CFE /* CCParticleSystemQuad.cpp in Sources */,
 				1551A71C158F2ADE00E66CFE /* CCEGLViewProtocol.cpp in Sources */,
 				1551A724158F2ADE00E66CFE /* CCSAXParser.cpp in Sources */,
@@ -1572,6 +1609,7 @@
 				1551A82C158F2ADF00E66CFE /* ccShaders.cpp in Sources */,
 				1551A82E158F2ADF00E66CFE /* CCAnimation.cpp in Sources */,
 				1551A830158F2ADF00E66CFE /* CCAnimationCache.cpp in Sources */,
+				1AC1EBEB1E0272CE008DBC22 /* CCProfilerLog.cpp in Sources */,
 				1551A832158F2ADF00E66CFE /* CCSprite.cpp in Sources */,
 				1551A834158F2ADF00E66CFE /* CCSpriteBatchNode.cpp in Sources */,
 				1551A836158F2ADF00E66CFE /* CCSpriteFrame.cpp in Sources */,
@@ -1598,8 +1636,10 @@
 				1551A865158F2ADF00E66CFE /* CCTMXLayer.cpp in Sources */,
 				1551A867158F2ADF00E66CFE /* CCTMXObjectGroup.cpp in Sources */,
 				1551A869158F2ADF00E66CFE /* CCTMXTiledMap.cpp in Sources */,
+				1AC1EBE71E0272CE008DBC22 /* CCCallNode.cpp in Sources */,
 				1551A86B158F2ADF00E66CFE /* CCTMXXMLParser.cpp in Sources */,
 				1551A86F158F2ADF00E66CFE /* CCTouchDispatcher.cpp in Sources */,
+				1AC1EBEF1E0272F7008DBC22 /* CCPVRParzer.cpp in Sources */,
 				1551A871158F2ADF00E66CFE /* CCTouchHandler.cpp in Sources */,
 				154269DC15B5653000712A7F /* CCNotificationCenter.cpp in Sources */,
 				41CD6C3715BF7382005E6F29 /* CCApplication.mm in Sources */,

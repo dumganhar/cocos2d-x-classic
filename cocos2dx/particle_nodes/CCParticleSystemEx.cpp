@@ -418,6 +418,7 @@ void CCParticleSystemEx::update(float dt)
 {
 	CC_PROFILER_HELPER;
 	CC_PROFILER_START_CATEGORY(kCCProfilerCategoryParticles , @"CCParticleSystem - update");
+	addRunningCount();
 	if (!m_bVisible)
 	{
 		return;

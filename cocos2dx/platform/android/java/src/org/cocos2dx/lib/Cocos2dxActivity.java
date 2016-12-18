@@ -51,6 +51,8 @@ public abstract class Cocos2dxActivity extends Activity implements Cocos2dxHelpe
 	private Cocos2dxHandler mHandler;
 	private static Context sContext = null;
 	private static FrameLayout sRootLayout = null;
+    // whether register succeed
+    public static boolean sRegistered = false;
 	
 	public static Context getContext() {
 		return sContext;
@@ -69,7 +71,7 @@ public abstract class Cocos2dxActivity extends Activity implements Cocos2dxHelpe
     	this.init();
 
 		Cocos2dxHelper.init(this, this);
-		Cocos2dxEngineDataManager.init(this, mGLSurfaceView);
+		sRegistered = Cocos2dxEngineDataManager.init(this, mGLSurfaceView);
 	}
 
 	// ===========================================================

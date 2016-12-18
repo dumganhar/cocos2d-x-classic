@@ -71,15 +71,42 @@ NS_CC_BEGIN
 class CCParticleSystemStatistics 
 {
 public:
+	CCParticleSystemStatistics()
+	{
+		m_nRunningCount = 0;
+	}
+
 	void add(CCParticleSystem* pParticle)
 	{
 		m_setParticle.insert(pParticle);
+// 		if (m_setParticle.size() > 1000)
+// 		{
+// 			int count = m_setParticle.size();
+// 			CCLOG("CCParticleSystem too many!! %d", count);
+// 		}		
 	}
 	void remove(CCParticleSystem* pParticle)
 	{
 		m_setParticle.erase(pParticle);
 	}
+
+	void resetRunningCount()
+	{
+		m_nRunningCount = 0;
+	}
+
+	void addRunningCount()
+	{
+		++m_nRunningCount;
+	}
+
+	int getRunningCount()
+	{
+		return m_nRunningCount;
+	}
+
 private:
+	int m_nRunningCount;
 	std::set<CCParticleSystem*> m_setParticle;
 };
 
@@ -654,6 +681,8 @@ void CCParticleSystem::update(float dt)
 {
 	CC_PROFILER_HELPER;
     CC_PROFILER_START_CATEGORY(kCCProfilerCategoryParticles , "CCParticleSystem - update");
+
+	addRunningCount();
 	if (!m_bVisible)
 	{
 		return;
@@ -1456,8 +1485,20 @@ std::vector<CCParticleSystem*>& CCParticleSystem::getAllParticleSystems()
 	 return g_allInstances;
 }
 
+int CCParticleSystem::getRunningParticleSystemCount()
+{
+	return g_particleSystemStatistics.getRunningCount();
+}
 
+void CCParticleSystem::addRunningCount()
+{
+	g_particleSystemStatistics.addRunningCount();
+}
 
+void CCParticleSystem::resetRunningParticleSystemCount()
+{
+	g_particleSystemStatistics.resetRunningCount();
+}
 
 NS_CC_END
 

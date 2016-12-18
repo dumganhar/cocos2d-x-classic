@@ -371,7 +371,10 @@ unsigned int CCTableView::_indexFromOffset(CCPoint offset)
 int CCTableView::__indexFromOffset(CCPoint offset)
 {
     int low = 0;
-    int high = m_pDataSource->numberOfCellsInTableView(this) - 1;
+    //int high = m_pDataSource->numberOfCellsInTableView(this) - 1;
+	//当numberOffCells的接口中的数值变大，而table并没有reload的时候，这里会导致崩溃。
+	//由于m_vCellsPositions包括所有已显示cell的位置+一个结束位置，所以这里使用实际的cell数为数量。
+	int high = m_vCellsPositions.size() - 2;
     float search;
     switch (this->getDirection())
     {
@@ -386,6 +389,7 @@ int CCTableView::__indexFromOffset(CCPoint offset)
     while (high >= low)
     {
         int index = low + (high - low) / 2;
+		//(high + low) / 2 取中值，由于high >= low，所以index永远小于high。
         float cellStart = m_vCellsPositions[index];
         float cellEnd = m_vCellsPositions[index + 1];
 
@@ -571,7 +575,7 @@ void CCTableView::scrollViewDidScroll(CCScrollView* view)
         }
         this->updateCellAtIndex(i);
 		//这里是因为 cocos 创建跟更新写到一起了。    在拖动的时候。 新发现了一个item时候 只会创建不会更新。 导致显示不对。
-		//还有一种改法是多创建一个（不过更新的时候还是会出问题。需要尝试 ）。  目前多更新一次（防止出现创建未更新的情况）。 理论上有一点消耗。 
+		//还有一种改法是多创建一个（不过更新的时候还是会出问题。需要尝试 ）。  目前多更新一次（防止出现创建未更新的情况）。 理论上?幸坏阆摹? 
 		this->updateCellAtIndex(i);
     }
 }

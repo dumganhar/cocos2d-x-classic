@@ -34,6 +34,7 @@ extern "C" {
 
 #include "LuaCocos2d.h"
 #include "Cocos2dxLuaLoader.h"
+#include "Scripting/ExportAPI/LuaAPI/LuaWeshoothd.h"
 
 #if (CC_TARGET_PLATFORM == CC_PLATFORM_IOS || CC_TARGET_PLATFORM == CC_PLATFORM_MAC)
 #include "platform/ios/CCLuaObjcBridge.h"
@@ -106,6 +107,7 @@ bool CCLuaStack::init(void)
     m_state = lua_open();
     luaL_openlibs(m_state);
     tolua_Cocos2d_open(m_state);
+	tolua_Weshoothd_open(m_state);
     toluafix_open(m_state);
 
     // Register our version of the global "print" function

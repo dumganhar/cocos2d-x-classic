@@ -103,6 +103,29 @@ void CCBAnimationManager::setAutoPlaySequenceId(int autoPlaySequenceId)
     mAutoPlaySequenceId = autoPlaySequenceId;
 }
 
+int CCBAnimationManager::getSequenceIdByIndex(int index)
+{
+	CCArray* pArray = getSequences();
+
+	if (!pArray)
+	{
+		return -1;
+	}
+	int iCount = pArray->count();
+	if (index < iCount)
+	{
+		CCBSequence* pChildNode = (CCBSequence*)pArray->objectAtIndex(index);
+		if (pChildNode)
+		{
+			return pChildNode->getSequenceId();
+		}
+	}
+	else
+	{
+		return -1;
+	}
+}
+
 CCNode* CCBAnimationManager::getRootNode()
 {
     return mRootNode;

@@ -100,6 +100,8 @@ public:
 	void setStreakScaleX(float fScaleX);
 	void setStreakScaleY(float fScaleY);
 	void setJudegeValid(bool bJudgeValid) { m_bJudgeValid = bJudgeValid; }
+	void setUpdateWhenPosChange(bool bUpdate) {m_bUpdateWhenPosChange = bUpdate; }
+	unsigned int getNumOfPoints() { return m_uNuPoints; }
 
 protected:
     bool m_bFastMode;
@@ -132,6 +134,8 @@ private:
 
 	//顶点修正会导致断裂，增加配置不进行顶点修正 by flywu
 	bool m_bJudgeValid;
+	//位置改变时调用update
+	bool m_bUpdateWhenPosChange;
 };
 
 // end of misc_nodes group

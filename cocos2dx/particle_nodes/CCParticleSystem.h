@@ -431,13 +431,15 @@ public:
     /** Gets all ParticleSystem references
      */
     static std::vector<CCParticleSystem*>& getAllParticleSystems();
-
+	void addRunningCount();
 
 	////////////////////////////////////////////////////////
 	// add by camelliu
 	tCCParticle* getParticleByIndex(int iIndex);
 	void destroyParticleByIndex(int iIndex);
 	////////////////////////////////////////////////////////
+	static void resetRunningParticleSystemCount();
+	static int getRunningParticleSystemCount();
 private:
     friend class EngineDataManager;
     /** Internal use only, it's used by EngineDataManager class for Android platform */

@@ -20,6 +20,8 @@ public:
     */
     void setAnimationInterval(double interval);
 
+    void setAnimationIntervalForReason(double interval, SetIntervalReason reason);
+
     /**
     @brief    Run the message loop.
     */

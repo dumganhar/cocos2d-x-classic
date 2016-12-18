@@ -61,6 +61,9 @@ public:
     int getAutoPlaySequenceId();
     void setAutoPlaySequenceId(int autoPlaySequenceId);
     
+	//得到指定的动画Id
+	int getSequenceIdByIndex(int index);
+
     CCNode* getRootNode();
     void setRootNode(CCNode* pRootNode); // weak reference    
     
