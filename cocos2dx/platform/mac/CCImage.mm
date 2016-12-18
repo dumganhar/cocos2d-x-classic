@@ -562,8 +562,10 @@ CCImage::CCImage()
 , m_pData(0)
 , m_bHasAlpha(false)
 , m_bPreMulti(false)
+, m_uNumberOfMipmaps(0)
+, m_bCompressed(false)
 {
-    
+
 }
 
 CCImage::~CCImage()
